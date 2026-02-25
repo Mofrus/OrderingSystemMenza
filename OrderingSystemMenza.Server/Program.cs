@@ -1,17 +1,28 @@
+using OrderingSystemMenza.Models; // Ujisti se, že máš správný namespace pro ModelsContext
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Add service defaults & Aspire client integrations.
+// 1. Aspire Service Defaults (standardní nastavení)
 builder.AddServiceDefaults();
 
-// Add services to the container.
-builder.Services.AddProblemDetails();
+// 2. Registrace PostgreSQL pomocí Aspire komponenty
+// "sqldb" musí odpovídat názvu, který jsi definoval v AppHostu přes .AddDatabase("sqldb")
+builder.AddNpgsqlDbContext<ModelsContext>("sqldb");
 
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+builder.Services.AddProblemDetails();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// 3. Automatická migrace (volitelné, ale užitečné pro vývoj)
+// Toto zajistí, že se tabulky v Dockeru vytvoří samy při startu
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var context = scope.ServiceProvider.GetRequiredService<ModelsContext>();
+    context.Database.EnsureCreated(); // Pro jednoduchost, nebo context.Database.Migrate();
+}
+
 app.UseExceptionHandler();
 
 if (app.Environment.IsDevelopment())
@@ -19,31 +30,17 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
-
-string[] summaries = ["Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"];
-
+// Tady můžeš přidat endpointy, které pracují s DB
 var api = app.MapGroup("/api");
-api.MapGet("weatherforecast", () =>
+
+api.MapGet("/orders", async (ModelsContext db) => 
 {
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
+    // Ukázka načtení dat z Postgresu
+    return await db.Orders.ToListAsync(); 
+});
 
 app.MapDefaultEndpoints();
-
 app.UseFileServer();
-
 app.Run();
 
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
+// Tvůj record WeatherForecast zůstává...
