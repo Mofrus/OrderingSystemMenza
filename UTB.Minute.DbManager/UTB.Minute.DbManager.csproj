@@ -14,7 +14,7 @@
   <ItemGroup>
     <ProjectReference Include="..\UTB.Minute.Db\UTB.Minute.Db.csproj" />
     <ProjectReference Include="..\UTB.Minute.Contracts\UTB.Minute.Contracts.csproj" />
-    <ProjectReference Include="..\UTB.Minute.Apphost\UTB.Minute.Apphost.ServiceDefaults\UTB.Minute.Apphost.ServiceDefaults.csproj" />
+    <ProjectReference Include="..\UTB.Minute.AppHost\UTB.Minute.AppHost.ServiceDefaults\UTB.Minute.AppHost.ServiceDefaults.csproj" />
   </ItemGroup>
 
 </Project>

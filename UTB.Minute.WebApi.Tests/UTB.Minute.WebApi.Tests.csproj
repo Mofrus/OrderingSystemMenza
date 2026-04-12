@@ -20,7 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\UTB.Minute.Contracts\UTB.Minute.Contracts.csproj" />
-    <ProjectReference Include="..\UTB.Minute.Apphost\UTB.Minute.Apphost.AppHost\UTB.Minute.AppHost.csproj" />
+    <ProjectReference Include="..\UTB.Minute.AppHost\UTB.Minute.AppHost.AppHost\UTB.Minute.AppHost.csproj" />
   </ItemGroup>
 
 </Project>

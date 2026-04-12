@@ -12,7 +12,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UTB.Minute.DbManager", "UTB
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UTB.Minute.WebApi.Tests", "UTB.Minute.WebApi.Tests\UTB.Minute.WebApi.Tests.csproj", "{55555555-5555-5555-5555-555555555555}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UTB.Minute.AppHost", "UTB.Minute.Apphost\UTB.Minute.Apphost.AppHost\UTB.Minute.AppHost.csproj", "{66666666-6666-6666-6666-666666666666}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UTB.Minute.AppHost", "UTB.Minute.AppHost\UTB.Minute.AppHost.AppHost\UTB.Minute.AppHost.csproj", "{66666666-6666-6666-6666-666666666666}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
