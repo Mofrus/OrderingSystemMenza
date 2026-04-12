@@ -12,9 +12,6 @@ public class AspireFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        Environment.SetEnvironmentVariable("DOTNET_SYSTEM_NET_DISABLEIPV6", "0");
-        AppContext.SetSwitch("System.Net.DisableIPv6", false);
-
         var builder = await DistributedApplicationTestingBuilder
             .CreateAsync<Projects.UTB_Minute_AppHost>();
 
