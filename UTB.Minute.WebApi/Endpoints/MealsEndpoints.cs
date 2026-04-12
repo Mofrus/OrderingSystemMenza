@@ -34,7 +34,7 @@ public static class MealsEndpoints
     {
         if (string.IsNullOrWhiteSpace(dto.Name) || string.IsNullOrWhiteSpace(dto.Description) || dto.Price <= 0)
         {
-            return TypedResults.BadRequest("Name, Description are required and Price must be positive.");
+            return TypedResults.BadRequest("Name and Description are required and Price must be positive.");
         }
 
         var meal = new Meal
@@ -63,10 +63,10 @@ public static class MealsEndpoints
 
         if (string.IsNullOrWhiteSpace(dto.Name) || string.IsNullOrWhiteSpace(dto.Description) || dto.Price <= 0)
         {
-            return TypedResults.BadRequest("Name, Description are required and Price must be positive.");
+            return TypedResults.BadRequest("Name and Description are required and Price must be positive.");
         }
 
-        meal.Name = dto.Name;
+        meal.Name= dto.Name;
         meal.Description = dto.Description;
         meal.Price = dto.Price;
         meal.IsActive = dto.IsActive;
