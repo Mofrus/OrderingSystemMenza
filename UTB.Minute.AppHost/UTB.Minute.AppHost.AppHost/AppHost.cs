@@ -1,8 +1,7 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
 var postgres = builder
-    .AddPostgres("postgres")
-    .WithPgAdmin();
+    .AddPostgres("postgres");
 
 var database = postgres
     .AddDatabase("minute-db");
