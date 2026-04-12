@@ -25,4 +25,4 @@ jobs:
       run: dotnet build UTB.Minute.sln --no-restore --configuration Release
     
     - name: Test
-      run: dotnet test UTB.Minute.WebApi.Tests/UTB.Minute.WebApi.Tests.csproj --configuration Release --verbosity normal
+      run: dotnet test UTB.Minute.WebApi.Tests/UTB.Minute.WebApi.Tests.csproj --no-build --configuration Release --verbosity normal
