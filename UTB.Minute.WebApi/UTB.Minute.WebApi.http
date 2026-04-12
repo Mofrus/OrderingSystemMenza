@@ -1,6 +1,27 @@
 @UTB.Minute.WebApi_HostAddress = http://localhost:5254
 
-GET {{UTB.Minute.WebApi_HostAddress}}/weatherforecast/
+GET {{UTB.Minute.WebApi_HostAddress}}/meals
+Accept: application/json
+
+###
+
+POST {{UTB.Minute.WebApi_HostAddress}}/meals
+Content-Type: application/json
+
+{
+  "name": "Guláš",
+  "description": "Tradiční český guláš",
+  "price": 150.00
+}
+
+###
+
+GET {{UTB.Minute.WebApi_HostAddress}}/menu-items
+Accept: application/json
+
+###
+
+GET {{UTB.Minute.WebApi_HostAddress}}/orders
 Accept: application/json
 
 ###

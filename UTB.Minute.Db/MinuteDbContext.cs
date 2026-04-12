@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Reflection.Emit;
-using System.Text;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using UTB.Minute.Db.Entities;
+
+namespace UTB.Minute.Db;
 
 public class MinuteDbContext : DbContext
 {

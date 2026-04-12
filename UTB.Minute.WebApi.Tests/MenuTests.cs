@@ -1,133 +1,130 @@
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using UTB.Minute.Contracts.Menu;
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
 using UTB.Minute.Contracts.Meals;
-using UTB.Minute.Db;
-using UTB.Minute.Db.Entities;
+using UTB.Minute.Contracts.Menu;
 using Xunit;
 
 namespace UTB.Minute.WebApi.Tests;
 
-public class MenuTests : IClassFixture<WebApplicationFactory<Program>>
+[Collection("Aspire")]
+public class MenuTests
 {
-    private readonly WebApplicationFactory<Program> _factory;
-
-    public MenuTests(WebApplicationFactory<Program> factory)
+    private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        _factory = factory.WithWebHostBuilder(builder =>
+        PropertyNameCaseInsensitive = true
+    };
+
+    private readonly HttpClient _client;
+
+    public MenuTests(AspireFixture fixture)
+    {
+        _client = fixture.WebApiClient;
+    }
+
+    private async Task<MealDto> CreateTestMeal()
+    {
+        var mealDto = new CreateMealDto
         {
-            builder.ConfigureServices(services =>
-            {
-                var descriptor = services.FirstOrDefault(
-                    d => d.ServiceType == typeof(DbContextOptions<MinuteDbContext>));
+            Name = $"Menu Test Meal {Guid.NewGuid():N}",
+            Description = "Test Description",
+            Price = 100.00m
+        };
 
-                if (descriptor != null)
-                {
-                    services.Remove(descriptor);
-                }
-
-                services.AddDbContext<MinuteDbContext>(options =>
-                {
-                    options.UseNpgsql("Host=localhost;Port=5432;Database=minute_test_db;Username=postgres;Password=postgres");
-                });
-
-                var serviceProvider = services.BuildServiceProvider();
-                using var scope = serviceProvider.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<MinuteDbContext>();
-                
-                db.Database.EnsureDeleted();
-                db.Database.EnsureCreated();
-            });
-        });
+        var response = await _client.PostAsJsonAsync("/meals", mealDto);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<MealDto>(JsonOptions))!;
     }
 
     [Fact]
     public async Task GetMenuItems_Returns200Ok()
     {
-        var client = _factory.CreateClient();
-        var response = await client.GetAsync("/menu");
+        var response = await _client.GetAsync("/menu-items");
 
-        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var items = await response.Content.ReadFromJsonAsync<List<MenuItemDto>>(JsonOptions);
+        Assert.NotNull(items);
     }
 
     [Fact]
     public async Task CreateMenuItem_WithValidData_Returns201Created()
     {
-        var client = _factory.CreateClient();
+        var meal = await CreateTestMeal();
 
-        var mealDto = new CreateMealDto
-        {
-            Name = "Test Meal",
-            Description = "Test Description",
-            Price = 100.00m
-        };
-
-        var mealContent = new StringContent(
-            System.Text.Json.JsonSerializer.Serialize(mealDto),
-            System.Text.Encoding.UTF8,
-            "application/json");
-
-        var mealResponse = await client.PostAsync("/meals", mealContent);
-        var meal = await System.Text.Json.JsonSerializer.DeserializeAsync<MealDto>(
-            await mealResponse.Content.ReadAsStreamAsync());
-
-        var menuItemDto = new CreateMenuItemDto
+        var dto = new CreateMenuItemDto
         {
             Date = DateOnly.FromDateTime(DateTime.UtcNow),
             MealId = meal.Id,
             AvailablePortions = 50
         };
 
-        var menuContent = new StringContent(
-            System.Text.Json.JsonSerializer.Serialize(menuItemDto),
-            System.Text.Encoding.UTF8,
-            "application/json");
+        var response = await _client.PostAsJsonAsync("/menu-items", dto);
 
-        var response = await client.PostAsync("/menu", menuContent);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-        Assert.Equal(System.Net.HttpStatusCode.Created, response.StatusCode);
+        var created = await response.Content.ReadFromJsonAsync<MenuItemDto>(JsonOptions);
+        Assert.NotNull(created);
+        Assert.Equal(dto.MealId, created.MealId);
+        Assert.Equal(dto.AvailablePortions, created.AvailablePortions);
     }
 
     [Fact]
-    public async Task DeleteMenuItem_WithValidId_Returns200Ok()
+    public async Task UpdateMenuItem_WithValidData_Returns200Ok()
     {
-        var client = _factory.CreateClient();
+        var meal = await CreateTestMeal();
 
-        var mealDto = new CreateMealDto
+        var createDto = new CreateMenuItemDto
         {
-            Name = "Test Meal",
-            Description = "Test Description",
-            Price = 100.00m
+            Date = DateOnly.FromDateTime(DateTime.UtcNow),
+            MealId = meal.Id,
+            AvailablePortions = 30
         };
 
-        var mealContent = new StringContent(
-            System.Text.Json.JsonSerializer.Serialize(mealDto),
-            System.Text.Encoding.UTF8,
-            "application/json");
+        var createResponse = await _client.PostAsJsonAsync("/menu-items", createDto);
+        var createdItem = await createResponse.Content.ReadFromJsonAsync<MenuItemDto>(JsonOptions);
 
-        var mealResponse = await client.PostAsync("/meals", mealContent);
-        var meal = await System.Text.Json.JsonSerializer.DeserializeAsync<MealDto>(
-            await mealResponse.Content.ReadAsStreamAsync());
+        var updateDto = new UpdateMenuItemDto
+        {
+            Date = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(1)),
+            MealId = meal.Id,
+            AvailablePortions = 100
+        };
 
-        var menuItemDto = new CreateMenuItemDto
+        var updateResponse = await _client.PutAsJsonAsync($"/menu-items/{createdItem!.Id}", updateDto);
+
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
+
+        var updated = await updateResponse.Content.ReadFromJsonAsync<MenuItemDto>(JsonOptions);
+        Assert.NotNull(updated);
+        Assert.Equal(updateDto.AvailablePortions, updated.AvailablePortions);
+    }
+
+    [Fact]
+    public async Task DeleteMenuItem_WithValidId_Returns204NoContent()
+    {
+        var meal = await CreateTestMeal();
+
+        var createDto = new CreateMenuItemDto
         {
             Date = DateOnly.FromDateTime(DateTime.UtcNow),
             MealId = meal.Id,
             AvailablePortions = 50
         };
 
-        var menuContent = new StringContent(
-            System.Text.Json.JsonSerializer.Serialize(menuItemDto),
-            System.Text.Encoding.UTF8,
-            "application/json");
+        var createResponse = await _client.PostAsJsonAsync("/menu-items", createDto);
+        var createdItem = await createResponse.Content.ReadFromJsonAsync<MenuItemDto>(JsonOptions);
 
-        var createResponse = await client.PostAsync("/menu", menuContent);
-        var menuItem = await System.Text.Json.JsonSerializer.DeserializeAsync<MenuItemDto>(
-            await createResponse.Content.ReadAsStreamAsync());
+        var deleteResponse = await _client.DeleteAsync($"/menu-items/{createdItem!.Id}");
 
-        var deleteResponse = await client.DeleteAsync($"/menu/{menuItem.Id}");
+        Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+    }
 
-        Assert.Equal(System.Net.HttpStatusCode.OK, deleteResponse.StatusCode);
+    [Fact]
+    public async Task DeleteMenuItem_NotFound_Returns404()
+    {
+        var response = await _client.DeleteAsync($"/menu-items/{Guid.NewGuid()}");
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 }

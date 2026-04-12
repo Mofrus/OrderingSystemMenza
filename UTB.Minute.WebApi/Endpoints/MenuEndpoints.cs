@@ -10,41 +10,22 @@ public static class MenuEndpoints
 {
     public static void MapMenuEndpoints(this WebApplication app)
     {
-        app.MapGet("/menu", GetAllMenuItems)
-            .WithName("GetAllMenuItems")
-            .WithOpenApi();
+        app.MapGet("/menu-items", GetAllMenuItems)
+            .WithName("GetAllMenuItems");
 
-        app.MapGet("/menu/date/{date}", GetMenuItemsByDate)
-            .WithName("GetMenuItemsByDate")
-            .WithOpenApi();
+        app.MapPost("/menu-items", CreateMenuItem)
+            .WithName("CreateMenuItem");
 
-        app.MapPost("/menu", CreateMenuItem)
-            .WithName("CreateMenuItem")
-            .WithOpenApi();
+        app.MapPut("/menu-items/{id}", UpdateMenuItem)
+            .WithName("UpdateMenuItem");
 
-        app.MapPut("/menu/{id}", UpdateMenuItem)
-            .WithName("UpdateMenuItem")
-            .WithOpenApi();
-
-        app.MapDelete("/menu/{id}", DeleteMenuItem)
-            .WithName("DeleteMenuItem")
-            .WithOpenApi();
+        app.MapDelete("/menu-items/{id}", DeleteMenuItem)
+            .WithName("DeleteMenuItem");
     }
 
     private static async Task<IResult> GetAllMenuItems(MinuteDbContext db)
     {
         var menuItems = await db.MenuItems
-            .Include(m => m.Meal)
-            .ToListAsync();
-
-        var menuItemDtos = menuItems.Select(m => m.ToDto()).ToList();
-        return TypedResults.Ok(menuItemDtos);
-    }
-
-    private static async Task<IResult> GetMenuItemsByDate(DateOnly date, MinuteDbContext db)
-    {
-        var menuItems = await db.MenuItems
-            .Where(m => m.Date == date)
             .Include(m => m.Meal)
             .ToListAsync();
 
@@ -60,6 +41,11 @@ public static class MenuEndpoints
             return TypedResults.BadRequest($"Meal with id {dto.MealId} not found");
         }
 
+        if (dto.AvailablePortions < 0)
+        {
+            return TypedResults.BadRequest("AvailablePortions must be non-negative.");
+        }
+
         var menuItem = new MenuItem
         {
             Id = Guid.NewGuid(),
@@ -72,7 +58,7 @@ public static class MenuEndpoints
         await db.SaveChangesAsync();
 
         var menuItemDto = menuItem.ToDto();
-        return TypedResults.Created($"/menu/{menuItem.Id}", menuItemDto);
+        return TypedResults.Created($"/menu-items/{menuItem.Id}", menuItemDto);
     }
 
     private static async Task<IResult> UpdateMenuItem(Guid id, UpdateMenuItemDto dto, MinuteDbContext db)
@@ -111,6 +97,6 @@ public static class MenuEndpoints
         db.MenuItems.Remove(menuItem);
         await db.SaveChangesAsync();
 
-        return TypedResults.Ok();
+        return TypedResults.NoContent();
     }
 }

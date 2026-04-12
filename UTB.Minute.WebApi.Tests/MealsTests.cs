@@ -1,95 +1,73 @@
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
 using UTB.Minute.Contracts.Meals;
-using UTB.Minute.Db;
 using Xunit;
 
 namespace UTB.Minute.WebApi.Tests;
 
-public class MealsTests : IClassFixture<WebApplicationFactory<Program>>
+[Collection("Aspire")]
+public class MealsTests
 {
-    private readonly WebApplicationFactory<Program> _factory;
-
-    public MealsTests(WebApplicationFactory<Program> factory)
+    private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        _factory = factory.WithWebHostBuilder(builder =>
-        {
-            builder.ConfigureServices(services =>
-            {
-                var descriptor = services.FirstOrDefault(
-                    d => d.ServiceType == typeof(DbContextOptions<MinuteDbContext>));
+        PropertyNameCaseInsensitive = true
+    };
 
-                if (descriptor != null)
-                {
-                    services.Remove(descriptor);
-                }
+    private readonly HttpClient _client;
+    private readonly HttpClient _dbManagerClient;
 
-                services.AddDbContext<MinuteDbContext>(options =>
-                {
-                    options.UseNpgsql("Host=localhost;Port=5432;Database=minute_test_db;Username=postgres;Password=postgres");
-                });
-
-                var serviceProvider = services.BuildServiceProvider();
-                using var scope = serviceProvider.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<MinuteDbContext>();
-                
-                db.Database.EnsureDeleted();
-                db.Database.EnsureCreated();
-            });
-        });
+    public MealsTests(AspireFixture fixture)
+    {
+        _client = fixture.WebApiClient;
+        _dbManagerClient = fixture.DbManagerClient;
     }
 
     [Fact]
     public async Task GetMeals_Returns200Ok()
     {
-        var client = _factory.CreateClient();
-        var response = await client.GetAsync("/meals");
+        var response = await _client.GetAsync("/meals");
 
-        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var meals = await response.Content.ReadFromJsonAsync<List<MealDto>>(JsonOptions);
+        Assert.NotNull(meals);
     }
 
     [Fact]
     public async Task CreateMeal_WithValidData_Returns201Created()
     {
-        var client = _factory.CreateClient();
         var dto = new CreateMealDto
         {
-            Name = "Test Meal",
+            Name = "Test Meal Create",
             Description = "Test Description",
             Price = 100.00m
         };
 
-        var content = new StringContent(
-            System.Text.Json.JsonSerializer.Serialize(dto),
-            System.Text.Encoding.UTF8,
-            "application/json");
+        var response = await _client.PostAsJsonAsync("/meals", dto);
 
-        var response = await client.PostAsync("/meals", content);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-        Assert.Equal(System.Net.HttpStatusCode.Created, response.StatusCode);
+        var created = await response.Content.ReadFromJsonAsync<MealDto>(JsonOptions);
+        Assert.NotNull(created);
+        Assert.Equal(dto.Name, created.Name);
+        Assert.Equal(dto.Description, created.Description);
+        Assert.Equal(dto.Price, created.Price);
+        Assert.True(created.IsActive);
     }
 
     [Fact]
     public async Task UpdateMeal_WithValidData_Returns200Ok()
     {
-        var client = _factory.CreateClient();
-        
         var createDto = new CreateMealDto
         {
-            Name = "Original Meal",
+            Name = "Meal To Update",
             Description = "Original Description",
             Price = 100.00m
         };
 
-        var createContent = new StringContent(
-            System.Text.Json.JsonSerializer.Serialize(createDto),
-            System.Text.Encoding.UTF8,
-            "application/json");
-
-        var createResponse = await client.PostAsync("/meals", createContent);
-        var createdMeal = await System.Text.Json.JsonSerializer.DeserializeAsync<MealDto>(
-            await createResponse.Content.ReadAsStreamAsync());
+        var createResponse = await _client.PostAsJsonAsync("/meals", createDto);
+        var createdMeal = await createResponse.Content.ReadFromJsonAsync<MealDto>(JsonOptions);
 
         var updateDto = new UpdateMealDto
         {
@@ -99,13 +77,55 @@ public class MealsTests : IClassFixture<WebApplicationFactory<Program>>
             IsActive = true
         };
 
-        var updateContent = new StringContent(
-            System.Text.Json.JsonSerializer.Serialize(updateDto),
-            System.Text.Encoding.UTF8,
-            "application/json");
+        var updateResponse = await _client.PutAsJsonAsync($"/meals/{createdMeal!.Id}", updateDto);
 
-        var updateResponse = await client.PutAsync($"/meals/{createdMeal.Id}", updateContent);
+        Assert.Equal(HttpStatusCode.OK, updateResponse.StatusCode);
 
-        Assert.Equal(System.Net.HttpStatusCode.OK, updateResponse.StatusCode);
+        var updated = await updateResponse.Content.ReadFromJsonAsync<MealDto>(JsonOptions);
+        Assert.NotNull(updated);
+        Assert.Equal(updateDto.Name, updated.Name);
+        Assert.Equal(updateDto.Price, updated.Price);
+    }
+
+    [Fact]
+    public async Task DeactivateMeal_Returns204NoContent()
+    {
+        var createDto = new CreateMealDto
+        {
+            Name = "Meal To Deactivate",
+            Description = "Will be deactivated",
+            Price = 120.00m
+        };
+
+        var createResponse = await _client.PostAsJsonAsync("/meals", createDto);
+        var createdMeal = await createResponse.Content.ReadFromJsonAsync<MealDto>(JsonOptions);
+
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/meals/{createdMeal!.Id}/deactivate");
+        var deactivateResponse = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NoContent, deactivateResponse.StatusCode);
+
+        // Verify meal is deactivated by listing meals
+        var listResponse = await _client.GetAsync("/meals");
+        var meals = await listResponse.Content.ReadFromJsonAsync<List<MealDto>>(JsonOptions);
+        var deactivatedMeal = meals!.FirstOrDefault(m => m.Id == createdMeal.Id);
+        Assert.NotNull(deactivatedMeal);
+        Assert.False(deactivatedMeal.IsActive);
+    }
+
+    [Fact]
+    public async Task UpdateMeal_NotFound_Returns404()
+    {
+        var updateDto = new UpdateMealDto
+        {
+            Name = "Non Existent",
+            Description = "Does not exist",
+            Price = 100.00m,
+            IsActive = true
+        };
+
+        var response = await _client.PutAsJsonAsync($"/meals/{Guid.NewGuid()}", updateDto);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 }
