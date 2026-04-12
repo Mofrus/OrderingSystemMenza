@@ -111,9 +111,9 @@ Tests use **Aspire.Hosting.Testing** to start all services (including PostgreSQL
 
 | Member | Contribution |
 |--------|-------------|
-| Student 1 | 33 % |
-| Student 2 | 33 % |
-| Student 3 | 34 % |
+| Student 1 | 33.33 % |
+| Student 2 | 33.33 % |
+| Student 3 | 33.33 % |
 
 ---
 *Created as a semester project for UTB Zlín.*
