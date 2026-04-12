@@ -1,6 +1,0 @@
-@OrderingSystemMenza.DbManager_HostAddress = http://localhost:5162
-
-GET {{OrderingSystemMenza.DbManager_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
