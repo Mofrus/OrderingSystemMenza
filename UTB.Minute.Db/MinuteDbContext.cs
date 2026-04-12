@@ -58,8 +58,5 @@ public class MinuteDbContext : DbContext
             .Property(o => o.UpdatedAt)
             .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-        modelBuilder.Entity<Order>()
-            .Property(o => o.RowVersion)
-            .IsRowVersion();
     }
 }

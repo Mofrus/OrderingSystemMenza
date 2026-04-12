@@ -14,5 +14,4 @@ public class Order
 
     public OrderStatus Status { get; set; } = OrderStatus.Preparing;
 
-    public byte[] RowVersion { get; set; } = null!;
 }
