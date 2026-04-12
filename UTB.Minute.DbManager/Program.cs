@@ -4,31 +4,18 @@ using UTB.Minute.Db.Entities;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddDbContext<MinuteDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("Default")));
+builder.AddServiceDefaults();
+builder.AddNpgsqlDbContext<MinuteDbContext>("minute-db");
 
 var app = builder.Build();
 
-app.MapPost("/reset-db", ResetDatabase)
-    .WithName("ResetDatabase")
-    .WithOpenApi();
+app.MapDefaultEndpoints();
 
-app.MapGet("/", () => "DbManager is running");
-
-app.Run();
-
-static async Task<IResult> ResetDatabase(MinuteDbContext db)
+app.MapPost("/db/reset-seed", async (MinuteDbContext db) =>
 {
     await db.Database.EnsureDeletedAsync();
     await db.Database.EnsureCreatedAsync();
 
-    await SeedTestData(db);
-
-    return TypedResults.Ok(new { message = "Database reset and seeded successfully" });
-}
-
-static async Task SeedTestData(MinuteDbContext db)
-{
     var meals = new List<Meal>
     {
         new Meal
@@ -57,19 +44,11 @@ static async Task SeedTestData(MinuteDbContext db)
         }
     };
 
-    foreach (var meal in meals)
-    {
-        if (!db.Meals.Any(m => m.Name == meal.Name))
-        {
-            db.Meals.Add(meal);
-        }
-    }
-
+    db.Meals.AddRange(meals);
     await db.SaveChangesAsync();
 
     var today = DateOnly.FromDateTime(DateTime.UtcNow);
     var tomorrow = today.AddDays(1);
-    var nextWeek = today.AddDays(7);
 
     var menuItems = new List<MenuItem>
     {
@@ -96,13 +75,12 @@ static async Task SeedTestData(MinuteDbContext db)
         }
     };
 
-    foreach (var item in menuItems)
-    {
-        if (!db.MenuItems.Any(m => m.Date == item.Date && m.MealId == item.MealId))
-        {
-            db.MenuItems.Add(item);
-        }
-    }
-
+    db.MenuItems.AddRange(menuItems);
     await db.SaveChangesAsync();
-}
+
+    return TypedResults.Ok(new { message = "Database reset and seeded successfully" });
+}).WithName("ResetAndSeed");
+
+app.MapGet("/", () => "DbManager is running");
+
+app.Run();

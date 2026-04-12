@@ -11,24 +11,13 @@ public static class OrdersEndpoints
     public static void MapOrdersEndpoints(this WebApplication app)
     {
         app.MapGet("/orders", GetAllOrders)
-            .WithName("GetAllOrders")
-            .WithOpenApi();
-
-        app.MapGet("/orders/pending", GetPendingOrders)
-            .WithName("GetPendingOrders")
-            .WithOpenApi();
-
-        app.MapGet("/orders/{id}", GetOrderById)
-            .WithName("GetOrderById")
-            .WithOpenApi();
+            .WithName("GetAllOrders");
 
         app.MapPost("/orders", CreateOrder)
-            .WithName("CreateOrder")
-            .WithOpenApi();
+            .WithName("CreateOrder");
 
-        app.MapPut("/orders/{id}/status", UpdateOrderStatus)
-            .WithName("UpdateOrderStatus")
-            .WithOpenApi();
+        app.MapPatch("/orders/{id}/status", UpdateOrderStatus)
+            .WithName("UpdateOrderStatus");
     }
 
     private static async Task<IResult> GetAllOrders(MinuteDbContext db)
@@ -39,32 +28,6 @@ public static class OrdersEndpoints
 
         var orderDtos = orders.Select(o => o.ToDto()).ToList();
         return TypedResults.Ok(orderDtos);
-    }
-
-    private static async Task<IResult> GetPendingOrders(MinuteDbContext db)
-    {
-        var orders = await db.Orders
-            .Include(o => o.MenuItem)
-            .Where(o => o.Status != UTB.Minute.Db.Entities.OrderStatus.Completed)
-            .ToListAsync();
-
-        var orderDtos = orders.Select(o => o.ToDto()).ToList();
-        return TypedResults.Ok(orderDtos);
-    }
-
-    private static async Task<IResult> GetOrderById(Guid id, MinuteDbContext db)
-    {
-        var order = await db.Orders
-            .Include(o => o.MenuItem)
-            .FirstOrDefaultAsync(o => o.Id == id);
-
-        if (order == null)
-        {
-            return TypedResults.NotFound($"Order with id {id} not found");
-        }
-
-        var orderDto = order.ToDto();
-        return TypedResults.Ok(orderDto);
     }
 
     private static async Task<IResult> CreateOrder(CreateOrderDto dto, MinuteDbContext db)
@@ -111,6 +74,11 @@ public static class OrdersEndpoints
             return TypedResults.NotFound($"Order with id {id} not found");
         }
 
+        if (!Enum.IsDefined(dto.Status))
+        {
+            return TypedResults.BadRequest("Invalid order status.");
+        }
+
         var newStatus = OrderMapper.ToDbStatus(dto.Status);
 
         order.Status = newStatus;
@@ -120,17 +88,5 @@ public static class OrdersEndpoints
 
         var orderDto = order.ToDto();
         return TypedResults.Ok(orderDto);
-    }
-
-    private static UTB.Minute.Db.Entities.OrderStatus ConvertToDbStatus(OrderStatus status)
-    {
-        return status switch
-        {
-            OrderStatus.Preparing => UTB.Minute.Db.Entities.OrderStatus.Preparing,
-            OrderStatus.Ready => UTB.Minute.Db.Entities.OrderStatus.Ready,
-            OrderStatus.Cancelled => UTB.Minute.Db.Entities.OrderStatus.Cancelled,
-            OrderStatus.Completed => UTB.Minute.Db.Entities.OrderStatus.Completed,
-            _ => throw new ArgumentOutOfRangeException(nameof(status), status, null)
-        };
     }
 }

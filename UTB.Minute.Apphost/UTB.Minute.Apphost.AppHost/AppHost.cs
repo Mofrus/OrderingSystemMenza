@@ -5,7 +5,7 @@ var postgres = builder
     .WithPgAdmin();
 
 var database = postgres
-    .AddDatabase("minute_db");
+    .AddDatabase("minute-db");
 
 var dbManager = builder
     .AddProject<Projects.UTB_Minute_DbManager>("utb-minute-dbmanager")

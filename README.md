@@ -1,36 +1,15 @@
-# 🍴 Objednávací Systém pro Menzu - UTB.Minute
+# 🍴 UTB.Minute — Ordering System for University Canteen
 
-Semestrální projekt pro předmět **Aplikační Frameworky** (Half-semester Submission)
+Semester project for **Application Frameworks** course at UTB Zlín.
 
-## 📋 Obsah Dokumentace
-
-- [Technologický Stack](#-technologický-stack)
-- [Projektová Struktura](#-projektová-struktura)
-- [Datový Model](#-datový-model)
-- [Spuštění Projektu](#-spuštění-projektu)
-- [WebAPI Endpointy](#-webapi-endpointy)
-- [Testy](#-testy)
-- [Architektonická Rozhodnutí](#-architektonická-rozhodnutí)
-
-## 🚀 Technologický Stack
-
-- **Runtime**: .NET 10
-- **Web Framework**: ASP.NET Core Minimal WebAPI (TypedResults)
-- **ORM**: Entity Framework Core 10
-- **Databáze**: PostgreSQL
-- **Orchestrace**: .NET Aspire
-- **Testování**: xUnit + WebApplicationFactory
-- **Service Discovery**: Aspire
-
-## 📂 Projektová Struktura
+## 📂 Architecture & Project Responsibilities
 
 ```
 UTB.Minute (Solution)
 │
-├── UTB.Minute.AppHost                 # Aspire orchestrace
-│   └── AppHost.cs                     # PostgreSQL + Service Discovery
+├── UTB.Minute.AppHost             # .NET Aspire orchestration (PostgreSQL, service discovery)
 │
-├── UTB.Minute.Db                      # Database Layer
+├── UTB.Minute.Db                  # Database layer (EF Core entities, DbContext)
 │   ├── Entities/
 │   │   ├── Meal.cs
 │   │   ├── MenuItem.cs
@@ -38,399 +17,103 @@ UTB.Minute (Solution)
 │   │   └── OrderStatus.cs
 │   └── MinuteDbContext.cs
 │
-├── UTB.Minute.Contracts               # DTO Layer (Single Source of Truth)
-│   ├── Meals/
-│   │   ├── MealDto.cs
-│   │   ├── CreateMealDto.cs
-│   │   └── UpdateMealDto.cs
-│   ├── Menu/
-│   │   ├── MenuItemDto.cs
-│   │   ├── CreateMenuItemDto.cs
-│   │   └── UpdateMenuItemDto.cs
-│   ├── Orders/
-│   │   ├── OrderDto.cs
-│   │   ├── CreateOrderDto.cs
-│   │   └── UpdateOrderStatusDto.cs
-│   └── Enums/
-│       └── OrderStatus.cs
+├── UTB.Minute.Contracts           # DTO layer (no EF dependencies)
+│   ├── Enums/OrderStatus.cs
+│   ├── Meals/    (MealDto, CreateMealDto, UpdateMealDto)
+│   ├── Menu/     (MenuItemDto, CreateMenuItemDto, UpdateMenuItemDto)
+│   └── Orders/   (OrderDto, CreateOrderDto, UpdateOrderStatusDto)
 │
-├── UTB.Minute.WebApi                  # REST API
-│   ├── Endpoints/
-│   │   ├── MealsEndpoints.cs
-│   │   ├── MenuEndpoints.cs
-│   │   └── OrdersEndpoints.cs
-│   ├── Mappers/
-│   │   ├── MealMapper.cs
-│   │   ├── MenuItemMapper.cs
-│   │   └── OrderMapper.cs
-│   ├── Program.cs
-│   └── appsettings.json
+├── UTB.Minute.WebApi              # Minimal API — returns DTOs only
+│   ├── Endpoints/  (MealsEndpoints, MenuEndpoints, OrdersEndpoints)
+│   ├── Mappers/    (MealMapper, MenuItemMapper, OrderMapper)
+│   └── Program.cs
 │
-├── UTB.Minute.DbManager               # Database Management
-│   ├── Program.cs                     # POST /reset-db, Seed data
-│   └── appsettings.json
+├── UTB.Minute.DbManager          # DB management API (reset + seed)
+│   └── Program.cs                # POST /db/reset-seed
 │
-├── UTB.Minute.WebApi.Tests            # Integration Tests
-│   ├── MealsTests.cs
-│   ├── MenuTests.cs
-│   └── OrdersTests.cs
-│
-└── README.md                           # Tato dokumentace
+└── UTB.Minute.WebApi.Tests       # Integration tests (Aspire + PostgreSQL)
+    ├── AspireFixture.cs
+    ├── MealsTests.cs
+    ├── MenuTests.cs
+    └── OrdersTests.cs
 ```
 
-## 💾 Datový Model
+## 🚀 Tech Stack
 
-### Entita: Meal (Jídlo)
+- **.NET 10** / ASP.NET Core Minimal API
+- **Entity Framework Core 10** + **PostgreSQL**
+- **.NET Aspire** for orchestration & service discovery
+- **xUnit** integration tests via Aspire Testing
 
-| Pole | Typ | Popis |
-|------|-----|-------|
-| `Id` | Guid | Primární klíč |
-| `Name` | string | Název jídla |
-| `Description` | string | Popis |
-| `Price` | decimal(10,2) | Cena |
-| `IsActive` | bool | Zda je aktivní (neodstraňuje se) |
-| `CreatedAt` | DateTime | Čas vytvoření |
-| `UpdatedAt` | DateTime | Čas poslední úpravy |
+## 💾 Data Model
 
-### Entita: MenuItem (Položka Menu)
+| Entity | Key Fields |
+|--------|-----------|
+| **Meal** | Id, Name, Description, Price, IsActive, CreatedAt, UpdatedAt |
+| **MenuItem** | Id, Date, MealId (FK→Meal), AvailablePortions, CreatedAt, UpdatedAt |
+| **Order** | Id, MenuItemId (FK→MenuItem), StudentIdentifier, Status (enum), CreatedAt, UpdatedAt, RowVersion |
 
-| Pole | Typ | Popis |
-|------|-----|-------|
-| `Id` | Guid | Primární klíč |
-| `Date` | DateOnly | Datum položky menu |
-| `MealId` | Guid | FK na Meal |
-| `AvailablePortions` | int | Počet dostupných porcí |
-| `CreatedAt` | DateTime | Čas vytvoření |
-| `UpdatedAt` | DateTime | Čas poslední úpravy |
+**OrderStatus enum:** `Preparing`, `Ready`, `Cancelled`, `Completed`
 
-### Entita: Order (Objednávka)
+## 📡 API Endpoints
 
-| Pole | Typ | Popis |
-|------|-----|-------|
-| `Id` | Guid | Primární klíč |
-| `MenuItemId` | Guid | FK na MenuItem |
-| `StudentIdentifier` | string | Identifikátor studenta |
-| `Status` | OrderStatus | Stav objednávky (enum) |
-| `CreatedAt` | DateTime | Čas vytvoření |
-| `UpdatedAt` | DateTime | Čas poslední úpravy |
-| `RowVersion` | byte[] | Concurrency token |
+### Meals
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/meals` | Create a new meal (201) |
+| GET | `/meals` | List all meals (200) |
+| PUT | `/meals/{id}` | Update a meal (200 / 404) |
+| PATCH | `/meals/{id}/deactivate` | Soft-deactivate a meal (204 / 404) |
 
-### OrderStatus (Enum)
+### Menu Items
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/menu-items` | Create a menu item (201) |
+| GET | `/menu-items` | List all menu items (200) |
+| PUT | `/menu-items/{id}` | Update a menu item (200 / 404) |
+| DELETE | `/menu-items/{id}` | Delete a menu item (204 / 404) |
 
-```csharp
-public enum OrderStatus
-{
-    Preparing = 0,    // Připravuje se
-    Ready = 1,        // Hotová
-    Cancelled = 2,    // Zrušená
-    Completed = 3     // Dokončená
-}
-```
+### Orders
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/orders` | Create an order (201) |
+| GET | `/orders` | List all orders (200) |
+| PATCH | `/orders/{id}/status` | Update order status (200 / 404) |
 
-## 🎯 Spuštění Projektu
+### DbManager
+| Method | Route | Description |
+|--------|-------|-------------|
+| POST | `/db/reset-seed` | Reset DB and seed test data (200) |
 
-### Požadavky
+## 🎯 How to Run (Aspire)
 
-- Visual Studio 2026
+### Prerequisites
 - .NET 10 SDK
-- Docker (spuštěný v background)
-- PostgreSQL port 5432 (přes Docker Aspire)
+- Docker Desktop (running)
 
-### Kroky Spuštění
+### Steps
+1. Open `UTB.Minute.sln` in Visual Studio / Rider.
+2. Set **UTB.Minute.AppHost** as the startup project.
+3. Run (F5) — Aspire Dashboard opens automatically.
+   - PostgreSQL starts via Docker.
+   - WebApi and DbManager are registered via service discovery.
+4. Seed the database: `POST http://<dbmanager-url>/db/reset-seed`
 
-1. **Otevřít Solution v Visual Studio**
-   ```
-   File → Open → UTB.Minute.sln
-   ```
-
-2. **Nastavit Startup Project**
-   ```
-   Solution Explorer → Solution → Right-click
-   → Properties → Multiple Startup Projects
-   → Vybrat: UTB.Minute.AppHost
-   ```
-
-3. **Spustit (F5 nebo Ctrl+F5)**
-   - Aspire Dashboard se otevře: `http://localhost:18888`
-   - PostgreSQL se automaticky spustí
-   - WebAPI: `http://localhost:5000`
-   - DbManager: `http://localhost:5001`
-
-### Reset Databáze
+## ✅ How to Run Tests
 
 ```bash
-# HTTP POST
-curl -X POST http://localhost:5001/reset-db
-
-# Odpověď:
-{
-  "message": "Database reset and seeded successfully"
-}
+dotnet test UTB.Minute.WebApi.Tests
 ```
 
-## 📡 WebAPI Endpointy
+Tests use **Aspire.Hosting.Testing** to start all services (including PostgreSQL) in a test context. No manual Docker or database setup is needed — Docker must be running.
 
-### Meals (Jídla)
+## 👥 Team Contributions
 
-```
-GET /meals
-```
-Vrací seznam všech jídel
-
-```
-POST /meals
-Content-Type: application/json
-
-{
-  "name": "Guláš",
-  "description": "Tradiční český guláš",
-  "price": 150.00
-}
-```
-
-```
-PUT /meals/{id}
-Content-Type: application/json
-
-{
-  "name": "Guláš",
-  "description": "Tradiční český guláš",
-  "price": 150.00,
-  "isActive": true
-}
-```
-
-### Menu Items (Položky Menu)
-
-```
-GET /menu
-```
-Vrací všechny položky menu
-
-```
-GET /menu/date/{date}
-```
-Parametr: `date` formát YYYY-MM-DD
-
-```
-POST /menu
-Content-Type: application/json
-
-{
-  "date": "2025-01-20",
-  "mealId": "550e8400-e29b-41d4-a716-446655440000",
-  "availablePortions": 50
-}
-```
-
-```
-PUT /menu/{id}
-Content-Type: application/json
-
-{
-  "date": "2025-01-20",
-  "mealId": "550e8400-e29b-41d4-a716-446655440000",
-  "availablePortions": 50
-}
-```
-
-```
-DELETE /menu/{id}
-```
-
-### Orders (Objednávky)
-
-```
-GET /orders
-```
-Vrací všechny objednávky
-
-```
-GET /orders/pending
-```
-Vrací pouze nedokončené objednávky
-
-```
-GET /orders/{id}
-```
-
-```
-POST /orders
-Content-Type: application/json
-
-{
-  "menuItemId": "550e8400-e29b-41d4-a716-446655440000"
-}
-```
-
-```
-PUT /orders/{id}/status
-Content-Type: application/json
-
-{
-  "status": "Ready"
-}
-```
-Možné stavy: `Preparing`, `Ready`, `Cancelled`, `Completed`
-
-## ✅ Testy
-
-### Spuštění Testů
-
-```bash
-cd UTB.Minute.WebApi.Tests
-dotnet test
-```
-
-### Testovací Pokryti
-
-✅ **Meals**
-- GetMeals - vrací 200 OK
-- CreateMeal - vytvoří nové jídlo (201 Created)
-- UpdateMeal - aktualizuje jídlo (200 OK)
-
-✅ **Menu Items**
-- GetMenuItems - vrací 200 OK
-- CreateMenuItem - vytvoří položku menu (201 Created)
-- DeleteMenuItem - smaže položku (200 OK)
-
-✅ **Orders**
-- CreateOrder - vytvoří objednávku (201 Created)
-- GetPendingOrders - vrací nedokončené (200 OK)
-- UpdateOrderStatus - změní stav (200 OK)
-
-### Testovací Databáze
-
-- Testy používají PostgreSQL databázi `minute_test_db`
-- Automatický setup: `EnsureDeleted()` → `EnsureCreated()`
-- Bez ruční konfigurace
-
-## 🏛️ Architektonická Rozhodnutí
-
-### 1. DTO vs Entity Separation
-**Důvod**: API nikdy neexponuje databázové entity  
-**Implementace**: Dedikovaný `Contracts` projekt s mapperama
-
-```csharp
-// Entity
-public class Meal { ... }
-
-// DTO
-public class MealDto { ... }
-
-// Mapper
-public static MealDto ToDto(this Meal meal) { ... }
-```
-
-### 2. Minimal WebAPI bez Kontrolerů
-**Důvod**: Jednoduchost, typová bezpečnost, snadnější testování  
-**Implementace**: Extension metody pro mapování endpointů
-
-```csharp
-app.MapMealsEndpoints();
-app.MapMenuEndpoints();
-app.MapOrdersEndpoints();
-```
-
-### 3. TypedResults místo IActionResult
-**Důvod**: Silná typová kontrola, lepší IntelliSense  
-**Implementace**: `TypedResults.Ok()`, `TypedResults.Created()`, apod.
-
-### 4. Aspire Service Discovery
-**Důvod**: Bez hardcodovaných IP adres, automatická orchestrace  
-**Konfiguracija**:
-```csharp
-var postgres = builder.AddPostgres("postgres");
-var database = postgres.AddDatabase("minute_db");
-var webApi = builder.AddProject<UTB_Minute_WebApi>("webapi")
-    .WithReference(database)
-    .WaitFor(database);
-```
-
-### 5. Concurrency Control
-**Důvod**: Bezpečné objednávání poslední porce  
-**Implementace**: `RowVersion` (timestamp) na Order entitě
-
-```csharp
-public byte[] RowVersion { get; set; }
-```
-
-### 6. EF Core Best Practices
-- Default values: `HasDefaultValueSql("CURRENT_TIMESTAMP")`
-- Precision: `HasPrecision(10, 2)` na peněz
-- Cascade delete pro orphaned records
-
-## 📋 Checklist - Půlsemestrální Odevzdání (20 bodů)
-
-### Projekty (3 body)
-- ✅ Všechny projekty existují (UTB.Minute.Db, Contracts, WebApi, DbManager, Tests)
-- ✅ Správné pojmenování
-- ✅ Správné reference mezi projekty
-
-### Datový Model (5 bodů)
-- ✅ Entity a vazby odpovídají zadání
-- ✅ DbContext správně nakonfigurován
-- ✅ OrderStatus jako enum
-- ✅ DTO v Contracts projektu
-- ✅ WebAPI vrací DTO, ne entity
-
-### WebAPI a Testy (6 bodů)
-- ✅ Meals: Create, Read, Update (deaktivace)
-- ✅ Menu: Create, Read, Update, Delete
-- ✅ Orders: Create, Read, Change Status
-
-### Aspire Integrace (4 body)
-- ✅ PostgreSQL přes Aspire
-- ✅ Http Command `/reset-db`
-- ✅ Seed testovacích dat
-- ✅ Service Discovery bez pevných adres
-
-### Testy a Dokumentace (2 body)
-- ✅ xUnit testy s reálnou databází
-- ✅ README.md dokumentace
+| Member | Contribution |
+|--------|-------------|
+| Student 1 | 33 % |
+| Student 2 | 33 % |
+| Student 3 | 34 % |
 
 ---
-
-## 👥 Týmová práce
-
-**Přispívající**:
-- Student 1: 33%
-- Student 2: 33%
-- Student 3: 34%
-
----
-
-**Projekt je připraven pro půlsemestrální odevzdání!**
-5.  **Clean Code:** Použití `TypedResults` v Minimal API a nezávislost DTO na entitách.
-
----
-
-## ✅ Checklist před odevzdáním
-
-> [!CAUTION]
-> **Důležité pravidlo:** Pokud se projekt nesestaví, nespustí nebo nebude splňovat verzi .NET 10 / angličtinu, je hodnocen **0 body** bez ohledu na implementaci.
-
-### Funkcionalita
-- [ ] Funkční Service Discovery (žádné hardcoded IP adresy).
-- [ ] Implementován HTTP Command pro reset a seed databáze.
-- [ ] SSE notifikace jsou doručovány studentům i kuchařkám.
-- [ ] Keycloak správně chrání přístup k aplikacím.
-- [ ] Entity Framework migrace fungují korektně.
-
-### Architektura
-- [ ] Minimal API používá `TypedResults`.
-- [ ] DTO jsou striktně oddělena od databázových entit.
-- [ ] Klienti přistupují k datům pouze přes API.
-
----
-
-## 🏁 Jak začít
-
-1.  Ujistěte se, že máte nainstalované **.NET 10 SDK** a **Docker Desktop** (pro kontejnery v Aspire).
-2.  Klonujte repozitář: `git clone https://github.com/Mofrus/OrderingSystemMenza.git`
-3.  Otevřete solution `OrderingSystemMenza.sln`.
-4.  Nastavte projekt **UTB.Minute.AppHost** jako startovací projekt.
-5.  Spusťte aplikaci (F5) – Aspire Dashboard se postará o zbytek.
-
----
-*Vytvořeno jako semestrální projekt pro UTB Zlín.*
+*Created as a semester project for UTB Zlín.*

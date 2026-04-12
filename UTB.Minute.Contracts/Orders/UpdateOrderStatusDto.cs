@@ -1,4 +1,6 @@
-﻿namespace UTB.Minute.Contracts.Orders;
+﻿using UTB.Minute.Contracts.Enums;
+
+namespace UTB.Minute.Contracts.Orders;
 
 public class UpdateOrderStatusDto
 {

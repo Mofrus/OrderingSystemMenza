@@ -1,171 +1,130 @@
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
-using UTB.Minute.Contracts.Orders;
+using System.Net;
+using System.Net.Http.Json;
+using System.Text.Json;
+using UTB.Minute.Contracts.Enums;
 using UTB.Minute.Contracts.Meals;
 using UTB.Minute.Contracts.Menu;
-using UTB.Minute.Db;
+using UTB.Minute.Contracts.Orders;
 using Xunit;
 
 namespace UTB.Minute.WebApi.Tests;
 
-public class OrdersTests : IClassFixture<WebApplicationFactory<Program>>
+[Collection("Aspire")]
+public class OrdersTests
 {
-    private readonly WebApplicationFactory<Program> _factory;
-
-    public OrdersTests(WebApplicationFactory<Program> factory)
+    private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        _factory = factory.WithWebHostBuilder(builder =>
+        PropertyNameCaseInsensitive = true
+    };
+
+    private readonly HttpClient _client;
+
+    public OrdersTests(AspireFixture fixture)
+    {
+        _client = fixture.WebApiClient;
+    }
+
+    private async Task<MenuItemDto> CreateTestMenuItem()
+    {
+        var mealDto = new CreateMealDto
         {
-            builder.ConfigureServices(services =>
-            {
-                var descriptor = services.FirstOrDefault(
-                    d => d.ServiceType == typeof(DbContextOptions<MinuteDbContext>));
+            Name = $"Order Test Meal {Guid.NewGuid():N}",
+            Description = "Test Description",
+            Price = 100.00m
+        };
 
-                if (descriptor != null)
-                {
-                    services.Remove(descriptor);
-                }
+        var mealResponse = await _client.PostAsJsonAsync("/meals", mealDto);
+        var meal = await mealResponse.Content.ReadFromJsonAsync<MealDto>(JsonOptions);
 
-                services.AddDbContext<MinuteDbContext>(options =>
-                {
-                    options.UseNpgsql("Host=localhost;Port=5432;Database=minute_test_db;Username=postgres;Password=postgres");
-                });
+        var menuItemDto = new CreateMenuItemDto
+        {
+            Date = DateOnly.FromDateTime(DateTime.UtcNow),
+            MealId = meal!.Id,
+            AvailablePortions = 50
+        };
 
-                var serviceProvider = services.BuildServiceProvider();
-                using var scope = serviceProvider.CreateScope();
-                var db = scope.ServiceProvider.GetRequiredService<MinuteDbContext>();
-                
-                db.Database.EnsureDeleted();
-                db.Database.EnsureCreated();
-            });
-        });
+        var menuResponse = await _client.PostAsJsonAsync("/menu-items", menuItemDto);
+        return (await menuResponse.Content.ReadFromJsonAsync<MenuItemDto>(JsonOptions))!;
+    }
+
+    [Fact]
+    public async Task GetOrders_Returns200Ok()
+    {
+        var response = await _client.GetAsync("/orders");
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+        var orders = await response.Content.ReadFromJsonAsync<List<OrderDto>>(JsonOptions);
+        Assert.NotNull(orders);
     }
 
     [Fact]
     public async Task CreateOrder_WithValidData_Returns201Created()
     {
-        var client = _factory.CreateClient();
-
-        var mealDto = new CreateMealDto
-        {
-            Name = "Test Meal",
-            Description = "Test Description",
-            Price = 100.00m
-        };
-
-        var mealContent = new StringContent(
-            System.Text.Json.JsonSerializer.Serialize(mealDto),
-            System.Text.Encoding.UTF8,
-            "application/json");
-
-        var mealResponse = await client.PostAsync("/meals", mealContent);
-        var meal = await System.Text.Json.JsonSerializer.DeserializeAsync<MealDto>(
-            await mealResponse.Content.ReadAsStreamAsync());
-
-        var menuItemDto = new CreateMenuItemDto
-        {
-            Date = DateOnly.FromDateTime(DateTime.UtcNow),
-            MealId = meal.Id,
-            AvailablePortions = 50
-        };
-
-        var menuContent = new StringContent(
-            System.Text.Json.JsonSerializer.Serialize(menuItemDto),
-            System.Text.Encoding.UTF8,
-            "application/json");
-
-        var menuResponse = await client.PostAsync("/menu", menuContent);
-        var menuItem = await System.Text.Json.JsonSerializer.DeserializeAsync<MenuItemDto>(
-            await menuResponse.Content.ReadAsStreamAsync());
+        var menuItem = await CreateTestMenuItem();
 
         var orderDto = new CreateOrderDto
         {
             MenuItemId = menuItem.Id
         };
 
-        var orderContent = new StringContent(
-            System.Text.Json.JsonSerializer.Serialize(orderDto),
-            System.Text.Encoding.UTF8,
-            "application/json");
+        var response = await _client.PostAsJsonAsync("/orders", orderDto);
 
-        var orderResponse = await client.PostAsync("/orders", orderContent);
+        Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-        Assert.Equal(System.Net.HttpStatusCode.Created, orderResponse.StatusCode);
-    }
-
-    [Fact]
-    public async Task GetPendingOrders_Returns200Ok()
-    {
-        var client = _factory.CreateClient();
-        var response = await client.GetAsync("/orders/pending");
-
-        Assert.Equal(System.Net.HttpStatusCode.OK, response.StatusCode);
+        var created = await response.Content.ReadFromJsonAsync<OrderDto>(JsonOptions);
+        Assert.NotNull(created);
+        Assert.Equal(menuItem.Id, created.MenuItemId);
+        Assert.Equal(OrderStatus.Preparing, created.Status);
     }
 
     [Fact]
     public async Task UpdateOrderStatus_WithValidData_Returns200Ok()
     {
-        var client = _factory.CreateClient();
-
-        var mealDto = new CreateMealDto
-        {
-            Name = "Test Meal",
-            Description = "Test Description",
-            Price = 100.00m
-        };
-
-        var mealContent = new StringContent(
-            System.Text.Json.JsonSerializer.Serialize(mealDto),
-            System.Text.Encoding.UTF8,
-            "application/json");
-
-        var mealResponse = await client.PostAsync("/meals", mealContent);
-        var meal = await System.Text.Json.JsonSerializer.DeserializeAsync<MealDto>(
-            await mealResponse.Content.ReadAsStreamAsync());
-
-        var menuItemDto = new CreateMenuItemDto
-        {
-            Date = DateOnly.FromDateTime(DateTime.UtcNow),
-            MealId = meal.Id,
-            AvailablePortions = 50
-        };
-
-        var menuContent = new StringContent(
-            System.Text.Json.JsonSerializer.Serialize(menuItemDto),
-            System.Text.Encoding.UTF8,
-            "application/json");
-
-        var menuResponse = await client.PostAsync("/menu", menuContent);
-        var menuItem = await System.Text.Json.JsonSerializer.DeserializeAsync<MenuItemDto>(
-            await menuResponse.Content.ReadAsStreamAsync());
+        var menuItem = await CreateTestMenuItem();
 
         var orderDto = new CreateOrderDto
         {
             MenuItemId = menuItem.Id
         };
 
-        var orderContent = new StringContent(
-            System.Text.Json.JsonSerializer.Serialize(orderDto),
-            System.Text.Encoding.UTF8,
-            "application/json");
-
-        var orderResponse = await client.PostAsync("/orders", orderContent);
-        var order = await System.Text.Json.JsonSerializer.DeserializeAsync<OrderDto>(
-            await orderResponse.Content.ReadAsStreamAsync());
+        var orderResponse = await _client.PostAsJsonAsync("/orders", orderDto);
+        var order = await orderResponse.Content.ReadFromJsonAsync<OrderDto>(JsonOptions);
 
         var updateStatusDto = new UpdateOrderStatusDto
         {
             Status = OrderStatus.Ready
         };
 
-        var statusContent = new StringContent(
-            System.Text.Json.JsonSerializer.Serialize(updateStatusDto),
-            System.Text.Encoding.UTF8,
-            "application/json");
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/orders/{order!.Id}/status")
+        {
+            Content = JsonContent.Create(updateStatusDto)
+        };
 
-        var statusResponse = await client.PutAsync($"/orders/{order.Id}/status", statusContent);
+        var statusResponse = await _client.SendAsync(request);
 
-        Assert.Equal(System.Net.HttpStatusCode.OK, statusResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, statusResponse.StatusCode);
+
+        var updated = await statusResponse.Content.ReadFromJsonAsync<OrderDto>(JsonOptions);
+        Assert.NotNull(updated);
+        Assert.Equal(OrderStatus.Ready, updated.Status);
+    }
+
+    [Fact]
+    public async Task UpdateOrderStatus_NotFound_Returns404()
+    {
+        var updateStatusDto = new UpdateOrderStatusDto
+        {
+            Status = OrderStatus.Ready
+        };
+
+        var request = new HttpRequestMessage(HttpMethod.Patch, $"/orders/{Guid.NewGuid()}/status")
+        {
+            Content = JsonContent.Create(updateStatusDto)
+        };
+
+        var response = await _client.SendAsync(request);
+
+        Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
 }
