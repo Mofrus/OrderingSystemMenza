@@ -1,15 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿namespace UTB.Minute.Contracts.Menu;
 
-namespace UTB.Minute.Contracts.Menu
+public class CreateMenuItemDto
 {
-    public class CreateMenuItemDto
-    {
-        public DateOnly Date { get; set; }
+    public DateOnly Date { get; set; }
 
-        public Guid MealId { get; set; }
+    public Guid MealId { get; set; }
 
-        public int AvailablePortions { get; set; }
-    }
+    public int AvailablePortions { get; set; }
 }

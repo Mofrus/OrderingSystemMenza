@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("UTB.Minute.Db")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ae1440bc90f52835ecde8425010b37b8bd422cb4")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6c7782fe6c21abd665873bb4cf3bd6e8315c76f5")]
 [assembly: System.Reflection.AssemblyProductAttribute("UTB.Minute.Db")]
 [assembly: System.Reflection.AssemblyTitleAttribute("UTB.Minute.Db")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

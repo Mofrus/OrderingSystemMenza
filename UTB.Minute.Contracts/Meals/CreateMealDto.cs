@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿namespace UTB.Minute.Contracts.Meals;
 
-namespace UTB.Minute.Contracts.Meals
+public class CreateMealDto
 {
-    public class CreateMealDto
-    {
-        public string Name { get; set; } = null!;
-        public string Description { get; set; } = null!;
-        public decimal Price { get; set; }
-    }
+    public string Name { get; set; } = null!;
+    public string Description { get; set; } = null!;
+    public decimal Price { get; set; }
 }

@@ -1,17 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿namespace UTB.Minute.Contracts.Orders;
 
-namespace UTB.Minute.Contracts.Orders
+public class OrderDto
 {
-    public class OrderDto
-    {
-        public Guid Id { get; set; }
+    public Guid Id { get; set; }
 
-        public Guid MenuItemId { get; set; }
+    public Guid MenuItemId { get; set; }
 
-        public DateTime CreatedAt { get; set; }
+    public string StudentIdentifier { get; set; } = null!;
 
-        public OrderStatus Status { get; set; }
-    }
+    public DateTime CreatedAt { get; set; }
+
+    public DateTime UpdatedAt { get; set; }
+
+    public OrderStatus Status { get; set; }
 }

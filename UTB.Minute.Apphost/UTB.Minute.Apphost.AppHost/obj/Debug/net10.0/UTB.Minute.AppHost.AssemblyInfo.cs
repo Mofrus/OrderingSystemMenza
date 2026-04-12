@@ -12,23 +12,21 @@ using System;
 using System.Reflection;
 
 [assembly: Microsoft.Extensions.Configuration.UserSecrets.UserSecretsIdAttribute("1b58c5a8-a891-4c6c-bce2-c00bd3693c62")]
-[assembly: System.Reflection.AssemblyMetadata("dcpclipath", "C:\\Users\\marti\\.nuget\\packages\\aspire.hosting.orchestration.win-x64\\13.1.0\\tools\\" +
+[assembly: System.Reflection.AssemblyMetadata("dcpclipath", "C:\\Users\\vojtu\\.nuget\\packages\\aspire.hosting.orchestration.win-x64\\13.1.0\\tools\\" +
     "dcp.exe")]
-[assembly: System.Reflection.AssemblyMetadata("dcpextensionpaths", "C:\\Users\\marti\\.nuget\\packages\\aspire.hosting.orchestration.win-x64\\13.1.0\\tools\\" +
+[assembly: System.Reflection.AssemblyMetadata("dcpextensionpaths", "C:\\Users\\vojtu\\.nuget\\packages\\aspire.hosting.orchestration.win-x64\\13.1.0\\tools\\" +
     "ext\\")]
-[assembly: System.Reflection.AssemblyMetadata("dcpbinpath", "C:\\Users\\marti\\.nuget\\packages\\aspire.hosting.orchestration.win-x64\\13.1.0\\tools\\" +
+[assembly: System.Reflection.AssemblyMetadata("dcpbinpath", "C:\\Users\\vojtu\\.nuget\\packages\\aspire.hosting.orchestration.win-x64\\13.1.0\\tools\\" +
     "ext\\bin\\")]
-[assembly: System.Reflection.AssemblyMetadata("apphostprojectpath", "C:\\Users\\marti\\source\\repos\\OrderingSystemMenza\\UTB.Minute.Apphost\\UTB.Minute.App" +
-    "host.AppHost")]
+[assembly: System.Reflection.AssemblyMetadata("apphostprojectpath", "E:\\GItHubRepos\\MenzaProjekt\\UTB.Minute.Apphost\\UTB.Minute.Apphost.AppHost")]
 [assembly: System.Reflection.AssemblyMetadata("apphostprojectname", "UTB.Minute.AppHost.csproj")]
-[assembly: System.Reflection.AssemblyMetadata("aspiredashboardpath", "C:\\Users\\marti\\.nuget\\packages\\aspire.dashboard.sdk.win-x64\\13.1.0\\tools\\Aspire.D" +
+[assembly: System.Reflection.AssemblyMetadata("aspiredashboardpath", "C:\\Users\\vojtu\\.nuget\\packages\\aspire.dashboard.sdk.win-x64\\13.1.0\\tools\\Aspire.D" +
     "ashboard.exe")]
-[assembly: System.Reflection.AssemblyMetadataAttribute("apphostprojectbaseintermediateoutputpath", "C:\\Users\\marti\\source\\repos\\OrderingSystemMenza\\UTB.Minute.Apphost\\UTB.Minute.App" +
-    "host.AppHost\\obj\\")]
+[assembly: System.Reflection.AssemblyMetadataAttribute("apphostprojectbaseintermediateoutputpath", "E:\\GItHubRepos\\MenzaProjekt\\UTB.Minute.Apphost\\UTB.Minute.Apphost.AppHost\\obj\\")]
 [assembly: System.Reflection.AssemblyCompanyAttribute("UTB.Minute.AppHost")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ae1440bc90f52835ecde8425010b37b8bd422cb4")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6c7782fe6c21abd665873bb4cf3bd6e8315c76f5")]
 [assembly: System.Reflection.AssemblyProductAttribute("UTB.Minute.AppHost")]
 [assembly: System.Reflection.AssemblyTitleAttribute("UTB.Minute.AppHost")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

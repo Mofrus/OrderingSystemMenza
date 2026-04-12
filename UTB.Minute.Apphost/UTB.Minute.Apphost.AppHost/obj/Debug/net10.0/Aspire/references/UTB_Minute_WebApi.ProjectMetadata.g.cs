@@ -15,7 +15,7 @@ public class UTB_Minute_WebApi : global::Aspire.Hosting.IProjectMetadata
     /// <summary>
     /// The path to the UTB_Minute_WebApi project.
     /// </summary>
-    public string ProjectPath => """C:\Users\marti\source\repos\OrderingSystemMenza\UTB.Minute.WebApi\UTB.Minute.WebApi.csproj""";
+    public string ProjectPath => """E:\GItHubRepos\MenzaProjekt\UTB.Minute.WebApi\UTB.Minute.WebApi.csproj""";
 
     /// <summary>
     /// Gets a value indicating whether building the project before running it should be suppressed.

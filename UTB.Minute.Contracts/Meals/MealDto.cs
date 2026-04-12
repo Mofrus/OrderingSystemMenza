@@ -1,17 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿namespace UTB.Minute.Contracts.Meals;
 
-namespace UTB.Minute.Contracts.Meals
+public class MealDto
 {
-    public class MealDto
-    {
-        public Guid Id { get; set; }
+    public Guid Id { get; set; }
 
-        public string Name { get; set; } = null!;
-        public string Description { get; set; } = null!;
-        public decimal Price { get; set; }
+    public string Name { get; set; } = null!;
+    public string Description { get; set; } = null!;
+    public decimal Price { get; set; }
 
-        public bool IsActive { get; set; }
-    }
+    public bool IsActive { get; set; }
 }

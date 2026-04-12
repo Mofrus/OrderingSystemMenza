@@ -1,13 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace UTB.Minute.Db.Entities;
+﻿namespace UTB.Minute.Db.Entities;
 
 public enum OrderStatus
 {
-    Preparing,  
-    Ready,       
-    Cancelled,   
-    Completed    
+    Preparing,
+    Ready,
+    Cancelled,
+    Completed
 }

@@ -17,5 +17,5 @@ public class UTB_Minute_AppHost
     /// <summary>
     /// The path to the Aspire Host project.
     /// </summary>
-    public static string ProjectPath => """C:\Users\marti\source\repos\OrderingSystemMenza\UTB.Minute.Apphost\UTB.Minute.Apphost.AppHost""";
+    public static string ProjectPath => """E:\GItHubRepos\MenzaProjekt\UTB.Minute.Apphost\UTB.Minute.Apphost.AppHost""";
 }

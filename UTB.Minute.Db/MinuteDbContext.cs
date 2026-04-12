@@ -24,14 +24,44 @@ public class MinuteDbContext : DbContext
             .Property(m => m.Price)
             .HasPrecision(10, 2);
 
+        modelBuilder.Entity<Meal>()
+            .Property(m => m.CreatedAt)
+            .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+        modelBuilder.Entity<Meal>()
+            .Property(m => m.UpdatedAt)
+            .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
         modelBuilder.Entity<MenuItem>()
             .HasOne(m => m.Meal)
             .WithMany(m => m.MenuItems)
-            .HasForeignKey(m => m.MealId);
+            .HasForeignKey(m => m.MealId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<MenuItem>()
+            .Property(m => m.CreatedAt)
+            .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+        modelBuilder.Entity<MenuItem>()
+            .Property(m => m.UpdatedAt)
+            .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
         modelBuilder.Entity<Order>()
             .HasOne(o => o.MenuItem)
             .WithMany(m => m.Orders)
-            .HasForeignKey(o => o.MenuItemId);
+            .HasForeignKey(o => o.MenuItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Order>()
+            .Property(o => o.CreatedAt)
+            .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+        modelBuilder.Entity<Order>()
+            .Property(o => o.UpdatedAt)
+            .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+        modelBuilder.Entity<Order>()
+            .Property(o => o.RowVersion)
+            .IsRowVersion();
     }
 }
