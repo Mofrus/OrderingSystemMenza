@@ -127,4 +127,37 @@ public class OrdersTests
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
     }
+
+    [Fact]
+    public async Task CreateOrder_SoldOut_ReturnsBadRequest()
+    {
+        var mealDto = new CreateMealDto
+        {
+            Name = $"Order Sold Out Meal {Guid.NewGuid():N}",
+            Description = "Test Description",
+            Price = 100.00m
+        };
+
+        var mealResponse = await _client.PostAsJsonAsync("/meals", mealDto);
+        var meal = await mealResponse.Content.ReadFromJsonAsync<MealDto>(JsonOptions);
+
+        var menuItemDto = new CreateMenuItemDto
+        {
+            Date = DateOnly.FromDateTime(DateTime.UtcNow),
+            MealId = meal!.Id,
+            AvailablePortions = 0
+        };
+
+        var menuResponse = await _client.PostAsJsonAsync("/menu-items", menuItemDto);
+        var menuItem = await menuResponse.Content.ReadFromJsonAsync<MenuItemDto>(JsonOptions);
+
+        var orderDto = new CreateOrderDto
+        {
+            MenuItemId = menuItem!.Id
+        };
+
+        var response = await _client.PostAsJsonAsync("/orders", orderDto);
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+    }
 }

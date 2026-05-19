@@ -9,7 +9,8 @@ var database = postgres
 var dbManager = builder
     .AddProject<Projects.UTB_Minute_DbManager>("utb-minute-dbmanager")
     .WithReference(database)
-    .WaitFor(database);
+    .WaitFor(database)
+    .WithHttpCommand("/db/reset-seed", "Reset & Seed DB");
 
 var webApi = builder
     .AddProject<Projects.UTB_Minute_WebApi>("utb-minute-webapi")

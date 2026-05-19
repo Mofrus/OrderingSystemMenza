@@ -441,3 +441,6 @@ FodyWeavers.xsd
 
 # tmp directory
 tmp/
+
+# Gemini
+GEMINI.md

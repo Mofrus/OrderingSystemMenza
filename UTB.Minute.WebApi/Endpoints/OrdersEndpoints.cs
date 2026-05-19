@@ -24,6 +24,7 @@ public static class OrdersEndpoints
     {
         var orders = await db.Orders
             .Include(o => o.MenuItem)
+            .Where(o => o.Status != UTB.Minute.Db.Entities.OrderStatus.Completed)
             .ToListAsync();
 
         var orderDtos = orders.Select(o => o.ToDto()).ToList();
