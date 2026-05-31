@@ -41,16 +41,17 @@ UTB.Minute (Solution)
 ### 2. Autentizace a Autorizace (Keycloak)
 - Keycloak kontejner s předpřipraveným realmem `menza` a datovým volumem běží přímo přes `.NET Aspire`.
 - Blazor klienti používají standardní `OIDC` a `Microsoft.AspNetCore.Components.WebAssembly.Authentication`.
-- Zavedeny role: **Admin** (Vedení menzy), **Student** a **Cook** (Kuchař).
+- Zavedeny role: **Admin** (Vedení menzy) a **Cook** (Kuchař).
+- **Student se nepřihlašuje** a přistupuje k veřejným stránkám (Denní menu, Moje objednávky).
 
 ### 3. Server-Sent Events (SSE) notifikace
 - Ve `WebApi` implementován `NotificationService` založený na System.Threading.Channels.
-- Endpoint `/notifications/stream` odesílá události pro kuchaře (vytvořena nová objednávka) a studenty (změna stavu jejich objednávky).
+- Endpoint `/notifications/stream` odesílá události pro kuchaře (vytvořena nová objednávka) a studenty (změna stavu jejich objednávky). SSE je veřejně dostupné dle zadání.
 - UI se díky SSE automaticky aktualizuje bez nutnosti ručního obnovování (F5).
 
 ### 4. Role a Funkcionality v Blazor Klientech
-- **Student (CanteenClient):** Vidí denní menu. U každého jídla vidí počet zbývajících porcí. Jakmile klesne na 0, zobrazí se vizuální označení `VYPRODÁNO` a tlačítko zmizí. Může objednávat jídla a na kartě Moje objednávky sledovat proces.
-- **Kuchařka (CanteenClient):** Vidí nezpracované objednávky. Může měnit jejich stav.
+- **Student (CanteenClient):** Vidí denní menu jako host. U každého jídla vidí počet zbývajících porcí. Jakmile klesne na 0, zobrazí se vizuální označení `VYPRODÁNO`. Může objednávat jídla anonymně. ID objednávek se ukládají do **LocalStorage** prohlížeče, díky čemuž student vidí seznam svých aktivních objednávek i bez přihlášení.
+- **Kuchařka (CanteenClient):** Po přihlášení vidí všechny nezpracované objednávky. Může měnit jejich stav.
   - Implementována pevná **State Machine validace stavů** na backendu, která blokuje neplatné přechody (např. nelze přepnout stav ze `Zrušeno` zpět na `Hotovo`).
 - **Vedení menzy (AdminClient):** Tabulková a formulářová správa Jídel (`Meals`) a Denního menu (`MenuItems`). Obsahuje podporu pro deaktivaci jídel (Soft delete).
 
