@@ -4,59 +4,72 @@
 @inject IHttpClientFactory ClientFactory
 @inject SseNotificationService Sse
 
-<PageTitle>Aktivní objednávky</PageTitle>
+<PageTitle>Výdej a příprava</PageTitle>
 
-<h1>Aktivní objednávky k přípravě</h1>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Výdej a příprava</h1>
+    <span class="badge bg-primary fs-6">Kuchař</span>
+</div>
 
 @if (orders == null)
 {
-    <p><em>Načítám...</em></p>
+    <div class="text-center mt-5">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Načítám...</span>
+        </div>
+    </div>
 }
 else if (orders.Count == 0)
 {
-    <p>Nejsou zde žádné aktivní objednávky.</p>
+    <div class="alert alert-success shadow-sm text-center py-4">
+        <i class="bi bi-emoji-smile fs-1 text-success d-block mb-2"></i>
+        Skvělá práce! Momentálně nejsou žádné aktivní objednávky k vyřízení.
+    </div>
 }
 else
 {
     @if (!string.IsNullOrEmpty(errorMessage))
     {
-        <div class="alert alert-danger">@errorMessage</div>
+        <div class="alert alert-danger shadow-sm">@errorMessage</div>
     }
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Student</th>
-                <th>Jídlo</th>
-                <th>Aktuální Stav</th>
-                <th>Akce</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var order in orders)
-            {
-                <tr>
-                    <td>@order.StudentIdentifier</td>
-                    <td>@order.MenuItem.MealName</td>
-                    <td>
-                        <span class="badge @GetStatusClass(order.Status)">@order.Status</span>
-                    </td>
-                    <td>
-                        @if (order.Status == Contracts.Enums.OrderStatus.Preparing)
-                        {
-                            <button class="btn btn-sm btn-success" @onclick="() => UpdateStatus(order.Id, Contracts.Enums.OrderStatus.Ready)">Připraveno</button>
-                            <button class="btn btn-sm btn-danger" @onclick="() => UpdateStatus(order.Id, Contracts.Enums.OrderStatus.Cancelled)">Zrušit</button>
-                        }
-                        else if (order.Status == Contracts.Enums.OrderStatus.Ready)
-                        {
-                            <button class="btn btn-sm btn-secondary" @onclick="() => UpdateStatus(order.Id, Contracts.Enums.OrderStatus.Completed)">Vydáno (Dokončit)</button>
-                            <button class="btn btn-sm btn-danger" @onclick="() => UpdateStatus(order.Id, Contracts.Enums.OrderStatus.Cancelled)">Zrušit</button>
-                        }
-                    </td>
-                </tr>
-            }
-        </tbody>
-    </table>
+    <div class="row">
+        @foreach (var order in orders)
+        {
+            <div class="col-md-6 col-lg-4 mb-3">
+                <div class="card shadow-sm h-100 border-top-0 border-end-0 border-bottom-0 border-4 @GetCardBorderClass(order.Status)">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted small">#@order.Id.ToString()[..8].ToUpper()</span>
+                            <span class="badge @GetStatusClass(order.Status)">@order.Status</span>
+                        </div>
+                        <h4 class="card-title mt-2 fw-bold">@order.MenuItem.MealName</h4>
+                        
+                        <div class="mt-4 d-flex justify-content-between">
+                            @if (order.Status == Contracts.Enums.OrderStatus.Preparing)
+                            {
+                                <button class="btn btn-success w-100 me-2" @onclick="() => UpdateStatus(order.Id, Contracts.Enums.OrderStatus.Ready)">
+                                    <i class="bi bi-check-circle me-1"></i> Hotovo
+                                </button>
+                                <button class="btn btn-outline-danger" @onclick="() => UpdateStatus(order.Id, Contracts.Enums.OrderStatus.Cancelled)" title="Zrušit">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                            }
+                            else if (order.Status == Contracts.Enums.OrderStatus.Ready)
+                            {
+                                <button class="btn btn-primary w-100 me-2" @onclick="() => UpdateStatus(order.Id, Contracts.Enums.OrderStatus.Completed)">
+                                    <i class="bi bi-bag-check me-1"></i> Vydat
+                                </button>
+                                <button class="btn btn-outline-danger" @onclick="() => UpdateStatus(order.Id, Contracts.Enums.OrderStatus.Cancelled)" title="Zrušit">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
 }
 
 @code {
@@ -114,5 +127,12 @@ else
         Contracts.Enums.OrderStatus.Cancelled => "bg-danger",
         Contracts.Enums.OrderStatus.Completed => "bg-secondary",
         _ => "bg-primary"
+    };
+
+    private string GetCardBorderClass(Contracts.Enums.OrderStatus status) => status switch
+    {
+        Contracts.Enums.OrderStatus.Preparing => "border-warning",
+        Contracts.Enums.OrderStatus.Ready => "border-success",
+        _ => "border-secondary"
     };
 }
