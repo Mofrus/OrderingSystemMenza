@@ -16,9 +16,9 @@ builder.Services.AddOidcAuthentication(options =>
     options.UserOptions.RoleClaim = "role";
 });
 
-var apiUrl = builder.Configuration["services:utb-minute-webapi:https:0"] ?? 
-             builder.Configuration["services:utb-minute-webapi:http:0"] ?? 
-             "https://localhost:5001"; // Fallback
+var apiUrl = builder.Configuration["services:utb-minute-webapi:http:0"] ?? 
+             builder.Configuration["services:utb-minute-webapi:https:0"] ?? 
+             "http://localhost:5000"; // Fallback
 
 builder.Services.AddScoped<AuthorizationMessageHandler>(sp =>
 {
