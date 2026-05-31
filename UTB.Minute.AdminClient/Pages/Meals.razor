@@ -1,0 +1,157 @@
+@page "/meals"
+@attribute [Authorize(Roles = "Admin")]
+@inject HttpClient Http
+
+<PageTitle>Správa jídel</PageTitle>
+
+<h1>Správa jídel</h1>
+
+@if (meals == null)
+{
+    <p><em>Načítám...</em></p>
+}
+else
+{
+    <button class="btn btn-primary mb-3" @onclick="ShowCreateForm">Přidat nové jídlo</button>
+
+    @if (isCreating || editingId != null)
+    {
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">@(isCreating ? "Nové jídlo" : "Úprava jídla")</h5>
+                <EditForm Model="currentMeal" OnValidSubmit="SaveMeal">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <div class="mb-3">
+                        <label class="form-label">Název</label>
+                        <InputText class="form-control" @bind-Value="currentMeal.Name" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Popis</label>
+                        <InputTextArea class="form-control" @bind-Value="currentMeal.Description" />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Cena</label>
+                        <InputNumber class="form-control" @bind-Value="currentMeal.Price" />
+                    </div>
+
+                    <button type="submit" class="btn btn-success">Uložit</button>
+                    <button type="button" class="btn btn-secondary" @onclick="CancelEdit">Zrušit</button>
+                </EditForm>
+            </div>
+        </div>
+    }
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Název</th>
+                <th>Popis</th>
+                <th>Cena</th>
+                <th>Aktivní</th>
+                <th>Akce</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var meal in meals)
+            {
+                <tr>
+                    <td>@meal.Name</td>
+                    <td>@meal.Description</td>
+                    <td>@meal.Price.ToString("C")</td>
+                    <td>@(meal.IsActive ? "Ano" : "Ne")</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" @onclick="() => EditMeal(meal)">Upravit</button>
+                        @if (meal.IsActive)
+                        {
+                            <button class="btn btn-sm btn-danger" @onclick="() => DeactivateMeal(meal.Id)">Deaktivovat</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<MealDto>? meals;
+    private bool isCreating = false;
+    private Guid? editingId = null;
+    private MealFormModel currentMeal = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadMeals();
+    }
+
+    private async Task LoadMeals()
+    {
+        meals = await Http.GetFromJsonAsync<List<MealDto>>("meals");
+    }
+
+    private void ShowCreateForm()
+    {
+        isCreating = true;
+        editingId = null;
+        currentMeal = new MealFormModel();
+    }
+
+    private void EditMeal(MealDto meal)
+    {
+        isCreating = false;
+        editingId = meal.Id;
+        currentMeal = new MealFormModel
+        {
+            Name = meal.Name,
+            Description = meal.Description,
+            Price = meal.Price
+        };
+    }
+
+    private void CancelEdit()
+    {
+        isCreating = false;
+        editingId = null;
+    }
+
+    private async Task SaveMeal()
+    {
+        if (isCreating)
+        {
+            var createDto = new CreateMealDto
+            {
+                Name = currentMeal.Name,
+                Description = currentMeal.Description,
+                Price = currentMeal.Price
+            };
+            await Http.PostAsJsonAsync("meals", createDto);
+        }
+        else if (editingId.HasValue)
+        {
+            var updateDto = new UpdateMealDto
+            {
+                Name = currentMeal.Name,
+                Description = currentMeal.Description,
+                Price = currentMeal.Price
+            };
+            await Http.PutAsJsonAsync($"meals/{editingId.Value}", updateDto);
+        }
+
+        CancelEdit();
+        await LoadMeals();
+    }
+
+    private async Task DeactivateMeal(Guid id)
+    {
+        await Http.PatchAsync($"meals/{id}/deactivate", null);
+        await LoadMeals();
+    }
+
+    class MealFormModel
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public decimal Price { get; set; }
+    }
+}

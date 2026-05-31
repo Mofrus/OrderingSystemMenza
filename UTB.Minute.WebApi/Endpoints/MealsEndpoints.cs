@@ -10,17 +10,22 @@ public static class MealsEndpoints
 {
     public static void MapMealsEndpoints(this WebApplication app)
     {
-        app.MapGet("/meals", GetAllMeals)
+        var group = app.MapGroup("/meals").RequireAuthorization();
+
+        group.MapGet("/", GetAllMeals)
             .WithName("GetAllMeals");
 
-        app.MapPost("/meals", CreateMeal)
-            .WithName("CreateMeal");
+        group.MapPost("/", CreateMeal)
+            .WithName("CreateMeal")
+            .RequireAuthorization("Admin");
 
-        app.MapPut("/meals/{id}", UpdateMeal)
-            .WithName("UpdateMeal");
+        group.MapPut("/{id}", UpdateMeal)
+            .WithName("UpdateMeal")
+            .RequireAuthorization("Admin");
 
-        app.MapPatch("/meals/{id}/deactivate", DeactivateMeal)
-            .WithName("DeactivateMeal");
+        group.MapPatch("/{id}/deactivate", DeactivateMeal)
+            .WithName("DeactivateMeal")
+            .RequireAuthorization("Admin");
     }
 
     private static async Task<IResult> GetAllMeals(MinuteDbContext db)

@@ -10,17 +10,22 @@ public static class MenuEndpoints
 {
     public static void MapMenuEndpoints(this WebApplication app)
     {
-        app.MapGet("/menu-items", GetAllMenuItems)
+        var group = app.MapGroup("/menu-items").RequireAuthorization();
+
+        group.MapGet("/", GetAllMenuItems)
             .WithName("GetAllMenuItems");
 
-        app.MapPost("/menu-items", CreateMenuItem)
-            .WithName("CreateMenuItem");
+        group.MapPost("/", CreateMenuItem)
+            .WithName("CreateMenuItem")
+            .RequireAuthorization("Admin");
 
-        app.MapPut("/menu-items/{id}", UpdateMenuItem)
-            .WithName("UpdateMenuItem");
+        group.MapPut("/{id}", UpdateMenuItem)
+            .WithName("UpdateMenuItem")
+            .RequireAuthorization("Admin");
 
-        app.MapDelete("/menu-items/{id}", DeleteMenuItem)
-            .WithName("DeleteMenuItem");
+        group.MapDelete("/{id}", DeleteMenuItem)
+            .WithName("DeleteMenuItem")
+            .RequireAuthorization("Admin");
     }
 
     private static async Task<IResult> GetAllMenuItems(MinuteDbContext db)

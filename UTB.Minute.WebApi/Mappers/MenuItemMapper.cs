@@ -12,6 +12,7 @@ public static class MenuItemMapper
             Id = menuItem.Id,
             Date = menuItem.Date,
             MealId = menuItem.MealId,
+            MealName = menuItem.Meal?.Name ?? string.Empty,
             AvailablePortions = menuItem.AvailablePortions
         };
     }

@@ -11,11 +11,14 @@
   <ItemGroup>
     <ProjectReference Include="..\..\UTB.Minute.WebApi\UTB.Minute.WebApi.csproj" />
     <ProjectReference Include="..\..\UTB.Minute.DbManager\UTB.Minute.DbManager.csproj" />
+    <ProjectReference Include="..\..\UTB.Minute.AdminClient\UTB.Minute.AdminClient.csproj" />
+    <ProjectReference Include="..\..\UTB.Minute.CanteenClient\UTB.Minute.CanteenClient.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Aspire.Hosting.AppHost" Version="13.2.2" />
-    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.2.2" />
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="13.3.5" />
+    <PackageReference Include="Aspire.Hosting.Keycloak" Version="13.3.5-preview.1.26270.6" />
+    <PackageReference Include="Aspire.Hosting.PostgreSQL" Version="13.3.5" />
   </ItemGroup>
 
 </Project>

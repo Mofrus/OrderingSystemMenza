@@ -1,0 +1,52 @@
+{
+  "id": "menza",
+  "realm": "menza",
+  "enabled": true,
+  "clients": [
+    {
+      "clientId": "menza-client",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "redirectUris": ["*"],
+      "webOrigins": ["*"]
+    }
+  ],
+  "roles": {
+    "realm": [
+      { "name": "Student", "description": "Student role" },
+      { "name": "Cook", "description": "Cook role" },
+      { "name": "Admin", "description": "Admin role" }
+    ]
+  },
+  "users": [
+    {
+      "username": "student",
+      "email": "student@utb.cz",
+      "firstName": "Student",
+      "lastName": "User",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "student" }],
+      "realmRoles": ["Student"]
+    },
+    {
+      "username": "cook",
+      "email": "cook@utb.cz",
+      "firstName": "Cook",
+      "lastName": "User",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "cook" }],
+      "realmRoles": ["Cook"]
+    },
+    {
+      "username": "admin",
+      "email": "admin@utb.cz",
+      "firstName": "Admin",
+      "lastName": "User",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "admin" }],
+      "realmRoles": ["Admin"]
+    }
+  ]
+}

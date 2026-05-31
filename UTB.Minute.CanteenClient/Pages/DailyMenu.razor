@@ -1,0 +1,107 @@
+@page "/daily-menu"
+@attribute [Authorize(Roles = "Student")]
+@implements IDisposable
+@inject HttpClient Http
+@inject SseNotificationService Sse
+
+<PageTitle>Denní menu</PageTitle>
+
+<h1>Denní menu pro dnešek (@DateTime.Today.ToShortDateString())</h1>
+
+@if (menuItems == null)
+{
+    <p><em>Načítám...</em></p>
+}
+else if (menuItems.Count == 0)
+{
+    <p>Pro dnešní den není naplánováno žádné menu.</p>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+    @if (!string.IsNullOrEmpty(successMessage))
+    {
+        <div class="alert alert-success">@successMessage</div>
+    }
+
+    <div class="row">
+        @foreach (var item in menuItems.Where(m => m.Date == DateOnly.FromDateTime(DateTime.Today)))
+        {
+            <div class="col-md-4 mb-3">
+                <div class="card @(item.AvailablePortions <= 0 ? "border-danger text-muted" : "")">
+                    <div class="card-body">
+                        <h5 class="card-title">@item.MealName</h5>
+                        <h6 class="card-subtitle mb-2 text-muted">@item.AvailablePortions porcí zbývá</h6>
+                        @if (item.AvailablePortions > 0)
+                        {
+                            <button class="btn btn-primary" @onclick="() => OrderMeal(item.Id)">Objednat</button>
+                        }
+                        else
+                        {
+                            <span class="text-danger fw-bold">VYPRODÁNO</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    private List<MenuItemDto>? menuItems;
+    private string? errorMessage;
+    private string? successMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Sse.OnNotificationReceived += HandleNotification;
+        await LoadMenu();
+        _ = Sse.StartListeningAsync();
+    }
+
+    private void HandleNotification()
+    {
+        InvokeAsync(async () =>
+        {
+            await LoadMenu();
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        Sse.OnNotificationReceived -= HandleNotification;
+    }
+
+    private async Task LoadMenu()
+    {
+        menuItems = await Http.GetFromJsonAsync<List<MenuItemDto>>("menu-items");
+    }
+
+    private async Task OrderMeal(Guid menuItemId)
+    {
+        errorMessage = null;
+        successMessage = null;
+
+        var dto = new CreateOrderDto { MenuItemId = menuItemId };
+        var response = await Http.PostAsJsonAsync("orders", dto);
+
+        if (response.IsSuccessStatusCode)
+        {
+            successMessage = "Jídlo bylo úspěšně objednáno.";
+            await LoadMenu(); // Reload portions
+        }
+        else if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
+        {
+            errorMessage = await response.Content.ReadAsStringAsync();
+            await LoadMenu();
+        }
+        else
+        {
+            errorMessage = "Při objednávání došlo k chybě.";
+        }
+    }
+}

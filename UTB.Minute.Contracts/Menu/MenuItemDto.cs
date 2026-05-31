@@ -7,6 +7,8 @@ public class MenuItemDto
     public DateOnly Date { get; set; }
 
     public Guid MealId { get; set; }
+    
+    public string MealName { get; set; } = string.Empty;
 
     public int AvailablePortions { get; set; }
 }

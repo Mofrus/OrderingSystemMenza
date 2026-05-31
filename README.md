@@ -1,119 +1,107 @@
 # 🍴 UTB.Minute — Ordering System for University Canteen
 
-Semester project for **Application Frameworks** course at UTB Zlín.
+Semestrální projekt pro předmět **Aplikační frameworky** na UTB ve Zlíně. Projekt představuje kompletní řešení pro objednávání jídel v menze, využívající moderní přístupy ekosystému .NET.
 
-## 📂 Architecture & Project Responsibilities
+## 🚀 Zvolený Tech Stack
 
-```
+- **.NET 10** (Minimal APIs pro backend, Blazor WebAssembly pro frontend)
+- **Entity Framework Core 10** + **PostgreSQL** (Data layer)
+- **.NET Aspire** pro orchestraci, Service Discovery a integraci Keycloaku i databáze na lokálním prostředí.
+- **Keycloak** (nasazený přes Aspire) pro autentizaci a autorizaci, včetně řízení rolí (OIDC).
+- **Server-Sent Events (SSE)** přes `System.Threading.Channels` pro real-time aktualizace UI.
+- **xUnit** + **Aspire.Hosting.Testing** pro integrační testování s efemérní PostgreSQL databází.
+
+## 📂 Architektura & Projekty
+
+Řešení je logicky a fyzicky rozděleno do několika projektů:
+
+```text
 UTB.Minute (Solution)
 │
-├── UTB.Minute.AppHost             # .NET Aspire orchestration (PostgreSQL, service discovery)
+├── UTB.Minute.AppHost             # Orchestrátor celého prostředí (DB, Keycloak, API, Klienti)
+├── UTB.Minute.DbManager           # Pomocné API pro vyčištění a seedování databáze
 │
-├── UTB.Minute.Db                  # Database layer (EF Core entities, DbContext)
-│   ├── Entities/
-│   │   ├── Meal.cs
-│   │   ├── MenuItem.cs
-│   │   ├── Order.cs
-│   │   └── OrderStatus.cs
-│   └── MinuteDbContext.cs
+├── Backend:
+│   ├── UTB.Minute.Db              # Datová vrstva (DbContext, Entity s [ConcurrencyCheck])
+│   ├── UTB.Minute.Contracts       # Sdílená knihovna DTO objektů (zajišťuje striktní izolaci od EF)
+│   └── UTB.Minute.WebApi          # Hlavní Minimal API, REST, validace StateMachine, SSE notifikace
 │
-├── UTB.Minute.Contracts           # DTO layer (no EF dependencies)
-│   ├── Enums/OrderStatus.cs
-│   ├── Meals/    (MealDto, CreateMealDto, UpdateMealDto)
-│   ├── Menu/     (MenuItemDto, CreateMenuItemDto, UpdateMenuItemDto)
-│   └── Orders/   (OrderDto, CreateOrderDto, UpdateOrderStatusDto)
-│
-├── UTB.Minute.WebApi              # Minimal API — returns DTOs only
-│   ├── Endpoints/  (MealsEndpoints, MenuEndpoints, OrdersEndpoints)
-│   ├── Mappers/    (MealMapper, MenuItemMapper, OrderMapper)
-│   └── Program.cs
-│
-├── UTB.Minute.DbManager          # DB management API (reset + seed)
-│   └── Program.cs                # POST /db/reset-seed
-│
-└── UTB.Minute.WebApi.Tests       # Integration tests (Aspire + PostgreSQL)
-    ├── AspireFixture.cs
-    ├── MealsTests.cs
-    ├── MenuTests.cs
-    └── OrdersTests.cs
+└── Frontend (Blazor WebAssembly):
+    ├── UTB.Minute.AdminClient     # Klient pro vedení menzy (správa jídel a menu)
+    └── UTB.Minute.CanteenClient   # Klient pro studenty (objednávání) a kuchaře (výdej a příprava)
 ```
 
-## 🚀 Tech Stack
+## 🛠️ Implementovaná funkcionalita (dle rubriky)
 
-- **.NET 10** / ASP.NET Core Minimal API
-- **Entity Framework Core 10** + **PostgreSQL**
-- **.NET Aspire** for orchestration & service discovery
-- **xUnit** integration tests via Aspire Testing
+### 1. Řešení souběžnosti (Concurrency)
+- Vyřešeno pomocí vlastnosti `AvailablePortions` s anotací `[ConcurrencyCheck]`.
+- V případě, že se dva studenti pokusí objednat poslední porci ve stejnou milisekundu, Entity Framework vyvolá `DbUpdateConcurrencyException`. 
+- API tento stav zachytí a vrací chybový status `409 Conflict`, na který UI příslušně reaguje.
 
-## 💾 Data Model
+### 2. Autentizace a Autorizace (Keycloak)
+- Keycloak kontejner s předpřipraveným realmem `menza` a datovým volumem běží přímo přes `.NET Aspire`.
+- Blazor klienti používají standardní `OIDC` a `Microsoft.AspNetCore.Components.WebAssembly.Authentication`.
+- Zavedeny role: **Admin** (Vedení menzy), **Student** a **Cook** (Kuchař).
 
-| Entity | Key Fields |
-|--------|-----------|
-| **Meal** | Id, Name, Description, Price, IsActive, CreatedAt, UpdatedAt |
-| **MenuItem** | Id, Date, MealId (FK→Meal), AvailablePortions, CreatedAt, UpdatedAt |
-| **Order** | Id, MenuItemId (FK→MenuItem), StudentIdentifier, Status (enum), CreatedAt, UpdatedAt, RowVersion |
+### 3. Server-Sent Events (SSE) notifikace
+- Ve `WebApi` implementován `NotificationService` založený na System.Threading.Channels.
+- Endpoint `/notifications/stream` odesílá události pro kuchaře (vytvořena nová objednávka) a studenty (změna stavu jejich objednávky).
+- UI se díky SSE automaticky aktualizuje bez nutnosti ručního obnovování (F5).
 
-**OrderStatus enum:** `Preparing`, `Ready`, `Cancelled`, `Completed`
+### 4. Role a Funkcionality v Blazor Klientech
+- **Student (CanteenClient):** Vidí denní menu. U každého jídla vidí počet zbývajících porcí. Jakmile klesne na 0, zobrazí se vizuální označení `VYPRODÁNO` a tlačítko zmizí. Může objednávat jídla a na kartě Moje objednávky sledovat proces.
+- **Kuchařka (CanteenClient):** Vidí nezpracované objednávky. Může měnit jejich stav.
+  - Implementována pevná **State Machine validace stavů** na backendu, která blokuje neplatné přechody (např. nelze přepnout stav ze `Zrušeno` zpět na `Hotovo`).
+- **Vedení menzy (AdminClient):** Tabulková a formulářová správa Jídel (`Meals`) a Denního menu (`MenuItems`). Obsahuje podporu pro deaktivaci jídel (Soft delete).
 
-## 📡 API Endpoints
+## 🎯 Jak to spustit (Local Development)
 
-### Meals
-| Method | Route | Description |
-|--------|-------|-------------|
-| POST | `/meals` | Create a new meal (201) |
-| GET | `/meals` | List all meals (200) |
-| PUT | `/meals/{id}` | Update a meal (200 / 404) |
-| PATCH | `/meals/{id}/deactivate` | Soft-deactivate a meal (204 / 404) |
+### Požadavky
+- **.NET 10 SDK**
+- **Docker Desktop** (musí běžet na pozadí)
 
-### Menu Items
-| Method | Route | Description |
-|--------|-------|-------------|
-| POST | `/menu-items` | Create a menu item (201) |
-| GET | `/menu-items` | List all menu items (200) |
-| PUT | `/menu-items/{id}` | Update a menu item (200 / 404) |
-| DELETE | `/menu-items/{id}` | Delete a menu item (204 / 404) |
+### Spuštění projektu
+Díky .NET Aspire je spuštění celého komplexního systému otázkou jediného příkazu. Není třeba psát žádné Dockerfiles ani docker-compose.
 
-### Orders
-| Method | Route | Description |
-|--------|-------|-------------|
-| POST | `/orders` | Create an order (201) |
-| GET | `/orders` | List all orders (200) |
-| PATCH | `/orders/{id}/status` | Update order status (200 / 404) |
+1. Běžte do složky orchestrátoru:
+   ```bash
+   cd UTB.Minute.AppHost
+   dotnet run
+   ```
+2. Otevře se okno prohlížeče s **.NET Aspire Dashboard**. Zde uvidíte logy z:
+   - kontejneru `postgres` (databáze)
+   - kontejneru `keycloak` (autentizace)
+   - API `utb-minute-webapi`
+   - a obou klientů `utb-minute-adminclient` a `utb-minute-canteenclient`
 
-### DbManager
-| Method | Route | Description |
-|--------|-------|-------------|
-| POST | `/db/reset-seed` | Reset DB and seed test data (200) |
+### Seedování Databáze
+Jakmile aplikace běží, je nutné vytvořit tabulky a nasypat základní data. V Aspire Dashboard najděte URL pro `utb-minute-dbmanager` a zavolejte jej:
+```bash
+curl -X POST http://<dbmanager-url>/db/reset-seed
+```
 
-## 🎯 How to Run (Aspire)
+### Testovací účty (Keycloak)
+Následně si můžete otevřít adresy klientů a použít tyto údaje:
+- **Vedení menzy:** login: `admin`, heslo: `admin` *(otevřít AdminClient)*
+- **Student:** login: `student`, heslo: `student` *(otevřít CanteenClient)*
+- **Kuchař:** login: `cook`, heslo: `cook` *(otevřít CanteenClient)*
 
-### Prerequisites
-- .NET 10 SDK
-- Docker Desktop (running)
+## ✅ Spuštění integračních testů
 
-### Steps
-1. Open `UTB.Minute.sln` in Visual Studio / Rider.
-2. Set **UTB.Minute.AppHost** as the startup project.
-3. Run (F5) — Aspire Dashboard opens automatically.
-   - PostgreSQL starts via Docker.
-   - WebApi and DbManager are registered via service discovery.
-4. Seed the database: `POST http://<dbmanager-url>/db/reset-seed`
-
-## ✅ How to Run Tests
+Integrační testy plně ověřují validace, Minimal APIs a chování Entity Frameworku, a to automatickým vytvořením čisté testovací PostgreSQL přes Aspire testovací knihovnu.
 
 ```bash
-dotnet test UTB.Minute.WebApi.Tests
+cd UTB.Minute.WebApi.Tests
+dotnet test
 ```
 
-Tests use **Aspire.Hosting.Testing** to start all services (including PostgreSQL) in a test context. No manual Docker or database setup is needed — Docker must be running.
+## 👥 Členové týmu a podíly
 
-## 👥 Team Contributions
-
-| Member | Contribution |
-|--------|-------------|
+| Člen týmu | Podíl na projektu |
+|-----------|-------------------|
 | Student 1 | 33.33 % |
 | Student 2 | 33.33 % |
 | Student 3 | 33.33 % |
 
 ---
-*Created as a semester project for UTB Zlín.*
+*Vytvořeno jako semestrální projekt pro UTB Zlín.*

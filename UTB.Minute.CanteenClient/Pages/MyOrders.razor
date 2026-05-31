@@ -1,0 +1,83 @@
+@page "/my-orders"
+@attribute [Authorize(Roles = "Student")]
+@implements IDisposable
+@inject HttpClient Http
+@inject SseNotificationService Sse
+
+<PageTitle>Moje objednávky</PageTitle>
+
+<h1>Moje objednávky</h1>
+
+@if (orders == null)
+{
+    <p><em>Načítám...</em></p>
+}
+else if (orders.Count == 0)
+{
+    <p>Nemáte žádné aktivní objednávky.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>ID Objednávky</th>
+                <th>Jídlo</th>
+                <th>Datum</th>
+                <th>Stav</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var order in orders)
+            {
+                <tr>
+                    <td>@order.Id.ToString()[..8]...</td>
+                    <td>@order.MenuItem.MealName</td>
+                    <td>@order.MenuItem.Date.ToShortDateString()</td>
+                    <td>
+                        <span class="badge @GetStatusClass(order.Status)">@order.Status</span>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<OrderDto>? orders;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Sse.OnNotificationReceived += HandleNotification;
+        await LoadOrders();
+        _ = Sse.StartListeningAsync();
+    }
+
+    private void HandleNotification()
+    {
+        InvokeAsync(async () =>
+        {
+            await LoadOrders();
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        Sse.OnNotificationReceived -= HandleNotification;
+    }
+
+    private async Task LoadOrders()
+    {
+        orders = await Http.GetFromJsonAsync<List<OrderDto>>("orders");
+    }
+
+    private string GetStatusClass(Contracts.Enums.OrderStatus status) => status switch
+    {
+        Contracts.Enums.OrderStatus.Preparing => "bg-warning text-dark",
+        Contracts.Enums.OrderStatus.Ready => "bg-success",
+        Contracts.Enums.OrderStatus.Cancelled => "bg-danger",
+        Contracts.Enums.OrderStatus.Completed => "bg-secondary",
+        _ => "bg-primary"
+    };
+}

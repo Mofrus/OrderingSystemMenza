@@ -1,0 +1,116 @@
+@page "/active-orders"
+@attribute [Authorize(Roles = "Cook")]
+@implements IDisposable
+@inject HttpClient Http
+@inject SseNotificationService Sse
+
+<PageTitle>Aktivní objednávky</PageTitle>
+
+<h1>Aktivní objednávky k přípravě</h1>
+
+@if (orders == null)
+{
+    <p><em>Načítám...</em></p>
+}
+else if (orders.Count == 0)
+{
+    <p>Nejsou zde žádné aktivní objednávky.</p>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Student</th>
+                <th>Jídlo</th>
+                <th>Aktuální Stav</th>
+                <th>Akce</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var order in orders)
+            {
+                <tr>
+                    <td>@order.StudentIdentifier</td>
+                    <td>@order.MenuItem.MealName</td>
+                    <td>
+                        <span class="badge @GetStatusClass(order.Status)">@order.Status</span>
+                    </td>
+                    <td>
+                        @if (order.Status == Contracts.Enums.OrderStatus.Preparing)
+                        {
+                            <button class="btn btn-sm btn-success" @onclick="() => UpdateStatus(order.Id, Contracts.Enums.OrderStatus.Ready)">Připraveno</button>
+                            <button class="btn btn-sm btn-danger" @onclick="() => UpdateStatus(order.Id, Contracts.Enums.OrderStatus.Cancelled)">Zrušit</button>
+                        }
+                        else if (order.Status == Contracts.Enums.OrderStatus.Ready)
+                        {
+                            <button class="btn btn-sm btn-secondary" @onclick="() => UpdateStatus(order.Id, Contracts.Enums.OrderStatus.Completed)">Vydáno (Dokončit)</button>
+                            <button class="btn btn-sm btn-danger" @onclick="() => UpdateStatus(order.Id, Contracts.Enums.OrderStatus.Cancelled)">Zrušit</button>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<OrderDto>? orders;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Sse.OnNotificationReceived += HandleNotification;
+        await LoadOrders();
+        _ = Sse.StartListeningAsync();
+    }
+
+    private void HandleNotification()
+    {
+        InvokeAsync(async () =>
+        {
+            await LoadOrders();
+            StateHasChanged();
+        });
+    }
+
+    public void Dispose()
+    {
+        Sse.OnNotificationReceived -= HandleNotification;
+    }
+
+    private async Task LoadOrders()
+    {
+        orders = await Http.GetFromJsonAsync<List<OrderDto>>("orders");
+    }
+
+    private async Task UpdateStatus(Guid id, Contracts.Enums.OrderStatus newStatus)
+    {
+        errorMessage = null;
+        var dto = new UpdateOrderStatusDto { Status = newStatus };
+        var response = await Http.PatchAsJsonAsync($"orders/{id}/status", dto);
+
+        if (response.IsSuccessStatusCode)
+        {
+            await LoadOrders();
+        }
+        else
+        {
+            errorMessage = await response.Content.ReadAsStringAsync();
+        }
+    }
+
+    private string GetStatusClass(Contracts.Enums.OrderStatus status) => status switch
+    {
+        Contracts.Enums.OrderStatus.Preparing => "bg-warning text-dark",
+        Contracts.Enums.OrderStatus.Ready => "bg-success",
+        Contracts.Enums.OrderStatus.Cancelled => "bg-danger",
+        Contracts.Enums.OrderStatus.Completed => "bg-secondary",
+        _ => "bg-primary"
+    };
+}

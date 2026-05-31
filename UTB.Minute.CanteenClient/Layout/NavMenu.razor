@@ -1,0 +1,50 @@
+<div class="top-row ps-3 navbar navbar-dark">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="">Menza Klient</a>
+        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</div>
+
+<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
+    <nav class="nav flex-column">
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Domů
+            </NavLink>
+        </div>
+
+        <AuthorizeView Roles="Student">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="daily-menu">
+                    <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Denní menu
+                </NavLink>
+            </div>
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="my-orders">
+                    <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Moje objednávky
+                </NavLink>
+            </div>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="Cook">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="active-orders">
+                    <span class="bi bi-check-square-fill-nav-menu" aria-hidden="true"></span> Aktivní objednávky
+                </NavLink>
+            </div>
+        </AuthorizeView>
+    </nav>
+</div>
+
+@code {
+    private bool collapseNavMenu = true;
+
+    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
+
+    private void ToggleNavMenu()
+    {
+        collapseNavMenu = !collapseNavMenu;
+    }
+}

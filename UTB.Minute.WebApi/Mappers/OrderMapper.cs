@@ -1,4 +1,4 @@
-﻿using UTB.Minute.Contracts.Orders;
+using UTB.Minute.Contracts.Orders;
 using UTB.Minute.Db.Entities;
 
 namespace UTB.Minute.WebApi.Mappers;
@@ -11,14 +11,15 @@ public static class OrderMapper
         {
             Id = order.Id,
             MenuItemId = order.MenuItemId,
+            MenuItem = order.MenuItem != null ? order.MenuItem.ToDto() : new Contracts.Menu.MenuItemDto { Id = order.MenuItemId },
             StudentIdentifier = order.StudentIdentifier,
             CreatedAt = order.CreatedAt,
             UpdatedAt = order.UpdatedAt,
-            Status = ToContractStatus(order.Status)
+            Status = ToDtoStatus(order.Status)
         };
     }
 
-    private static Contracts.Enums.OrderStatus ToContractStatus(Db.Entities.OrderStatus status)
+    private static Contracts.Enums.OrderStatus ToDtoStatus(Db.Entities.OrderStatus status)
     {
         return status switch
         {

@@ -1,3 +1,6 @@
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
 using Aspire.Hosting;
 using Aspire.Hosting.Testing;
 using Xunit;
@@ -20,6 +23,32 @@ public class AspireFixture : IAsyncLifetime
 
         WebApiClient = App.CreateHttpClient("utb-minute-webapi");
         DbManagerClient = App.CreateHttpClient("utb-minute-dbmanager");
+
+        // Wait a little bit for Keycloak to be fully ready
+        await Task.Delay(5000);
+
+        try 
+        {
+            var keycloakClient = App.CreateHttpClient("keycloak");
+            var tokenResponse = await keycloakClient.PostAsync("/realms/menza/protocol/openid-connect/token", new FormUrlEncodedContent(new[]
+            {
+                new KeyValuePair<string, string>("client_id", "menza-client"),
+                new KeyValuePair<string, string>("grant_type", "password"),
+                new KeyValuePair<string, string>("username", "admin"),
+                new KeyValuePair<string, string>("password", "admin")
+            }));
+
+            if (tokenResponse.IsSuccessStatusCode)
+            {
+                var json = await tokenResponse.Content.ReadFromJsonAsync<JsonElement>();
+                var token = json.GetProperty("access_token").GetString();
+                WebApiClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            }
+        }
+        catch (Exception)
+        {
+            // Ignore if Keycloak isn't available or fails, tests will fail naturally
+        }
 
         // Reset and seed the database before running tests
         var resetResponse = await DbManagerClient.PostAsync("/db/reset-seed", null);

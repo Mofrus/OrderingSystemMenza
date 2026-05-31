@@ -1,4 +1,6 @@
-﻿namespace UTB.Minute.Db.Entities;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace UTB.Minute.Db.Entities;
 
 public class MenuItem
 {
@@ -9,6 +11,7 @@ public class MenuItem
     public Guid MealId { get; set; }
     public Meal Meal { get; set; } = null!;
 
+    [ConcurrencyCheck]
     public int AvailablePortions { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
