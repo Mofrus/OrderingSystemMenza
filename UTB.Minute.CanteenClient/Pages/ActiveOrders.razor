@@ -11,7 +11,12 @@
     <span class="badge bg-primary fs-6">Kuchař</span>
 </div>
 
-@if (orders == null)
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger shadow-sm">@errorMessage</div>
+}
+
+@if (orders == null && string.IsNullOrEmpty(errorMessage))
 {
     <div class="text-center mt-5">
         <div class="spinner-border text-primary" role="status">
@@ -19,7 +24,7 @@
         </div>
     </div>
 }
-else if (orders.Count == 0)
+else if (orders != null && orders.Count == 0)
 {
     <div class="alert alert-success shadow-sm text-center py-4">
         <i class="bi bi-emoji-smile fs-1 text-success d-block mb-2"></i>
@@ -28,11 +33,6 @@ else if (orders.Count == 0)
 }
 else
 {
-    @if (!string.IsNullOrEmpty(errorMessage))
-    {
-        <div class="alert alert-danger shadow-sm">@errorMessage</div>
-    }
-
     <div class="row">
         @foreach (var order in orders)
         {
@@ -79,10 +79,21 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        Http = ClientFactory.CreateClient("AuthAPI");
-        Sse.OnNotificationReceived += HandleNotification;
-        await LoadOrders();
-        _ = Sse.StartListeningAsync();
+        try
+        {
+            Http = ClientFactory.CreateClient("AuthAPI");
+            Sse.OnNotificationReceived += HandleNotification;
+            await LoadOrders();
+            _ = Sse.StartListeningAsync();
+        }
+        catch (AccessTokenNotAvailableException ex)
+        {
+            ex.Redirect();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Chyba při načítání: {ex.Message}";
+        }
     }
 
     private void HandleNotification()

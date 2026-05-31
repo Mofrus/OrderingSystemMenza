@@ -29,9 +29,11 @@ public class SseNotificationService : IAsyncDisposable
             using var stream = await response.Content.ReadAsStreamAsync(_cts.Token);
             using var reader = new StreamReader(stream);
 
-            while (!reader.EndOfStream && !_cts.Token.IsCancellationRequested)
+            while (!_cts.Token.IsCancellationRequested)
             {
                 var line = await reader.ReadLineAsync();
+                if (line == null) break; // Konec streamu
+                
                 if (!string.IsNullOrWhiteSpace(line) && line.StartsWith("data: "))
                 {
                     // var data = line.Substring(6);

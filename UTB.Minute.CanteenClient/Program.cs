@@ -26,21 +26,14 @@ var apiUrl = builder.Configuration["services:utb-minute-webapi:http:0"] ??
              builder.Configuration["services:utb-minute-webapi:https:0"] ?? 
              "http://localhost:5555"; // Fallback
 
-builder.Services.AddScoped<AuthorizationMessageHandler>(sp =>
-{
-    var handler = sp.GetRequiredService<AuthorizationMessageHandler>()
-        .ConfigureHandler(
-            authorizedUrls: new[] { apiUrl, "http://localhost:5555", "https://localhost:5556" },
-            scopes: new[] { "api" });
-    return handler;
-});
+builder.Services.AddTransient<CustomAuthorizationMessageHandler>();
 
 // Configure the authenticated client for cooks
 builder.Services.AddHttpClient("AuthAPI", client =>
 {
     client.BaseAddress = new Uri(apiUrl);
 })
-.AddHttpMessageHandler<AuthorizationMessageHandler>();
+.AddHttpMessageHandler<CustomAuthorizationMessageHandler>();
 
 // Configure public client for anonymous student actions
 builder.Services.AddHttpClient("PublicAPI", client =>

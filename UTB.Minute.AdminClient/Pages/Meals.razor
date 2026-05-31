@@ -82,7 +82,14 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadMeals();
+        try
+        {
+            await LoadMeals();
+        }
+        catch (AccessTokenNotAvailableException ex)
+        {
+            ex.Redirect();
+        }
     }
 
     private async Task LoadMeals()
