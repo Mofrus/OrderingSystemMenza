@@ -9,7 +9,14 @@ using UTB.Minute.WebApi.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
-builder.AddNpgsqlDbContext<MinuteDbContext>("minute-db");
+
+// Try to get connection string from Aspire, fallback to local postgres if not found
+var connectionString = builder.Configuration.GetConnectionString("minute-db") 
+                      ?? "Host=localhost;Database=minute-db;Username=postgres;Password=postgres";
+
+builder.AddNpgsqlDbContext<MinuteDbContext>("minute-db", configureSettings: settings => {
+    settings.ConnectionString = connectionString;
+});
 
 builder.Services.AddSingleton<NotificationService>();
 
@@ -72,6 +79,18 @@ builder.Services.AddAuthorization(options =>
         .RequireAuthenticatedUser()
         .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, "TestScheme")
         .Build();
+
+    options.AddPolicy("Admin", policy => policy
+        .RequireRole("Admin")
+        .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, "TestScheme"));
+    
+    options.AddPolicy("Cook", policy => policy
+        .RequireRole("Cook")
+        .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, "TestScheme"));
+    
+    options.AddPolicy("Student", policy => policy
+        .RequireRole("Student")
+        .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, "TestScheme"));
 });
 
 var app = builder.Build();
