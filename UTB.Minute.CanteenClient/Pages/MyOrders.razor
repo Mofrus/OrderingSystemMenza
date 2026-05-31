@@ -47,6 +47,8 @@ else
 @code {
     private List<OrderDto>? orders;
 
+    private string? errorMessage;
+
     protected override async Task OnInitializedAsync()
     {
         Sse.OnNotificationReceived += HandleNotification;
@@ -70,17 +72,25 @@ else
 
     private async Task LoadOrders()
     {
-        var localIds = await LocalStorage.GetItemAsync<List<string>>("my_orders") ?? new List<string>();
-        
-        if (localIds.Count == 0)
+        try 
         {
-            orders = new List<OrderDto>();
-            return;
-        }
+            var localIds = await LocalStorage.GetItemAsync<List<string>>("my_orders") ?? new List<string>();
+            
+            if (localIds.Count == 0)
+            {
+                orders = new List<OrderDto>();
+                return;
+            }
 
-        // Build query string ?ids=...&ids=...
-        var query = string.Join("&", localIds.Select(id => $"ids={id}"));
-        orders = await Http.GetFromJsonAsync<List<OrderDto>>($"orders?{query}");
+            // Build query string ?ids=...&ids=...
+            var query = string.Join("&", localIds.Select(id => $"ids={id}"));
+            orders = await Http.GetFromJsonAsync<List<OrderDto>>($"orders?{query}");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Nepodařilo se načíst objednávky: " + ex.Message;
+            orders = new List<OrderDto>(); // Stop spinning
+        }
     }
 
     private string GetStatusClass(Contracts.Enums.OrderStatus status) => status switch

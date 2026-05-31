@@ -30,7 +30,8 @@ builder.Services.AddHttpClient("api", client =>
 {
     client.BaseAddress = new Uri("https+http://utb-minute-webapi");
 })
-.AddHttpMessageHandler<AuthorizationMessageHandler>();
+.AddHttpMessageHandler<AuthorizationMessageHandler>()
+.AddServiceDiscovery();
 
 builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("api"));
 

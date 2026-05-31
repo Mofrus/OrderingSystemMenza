@@ -9,14 +9,22 @@
 
 <h1 class="mb-4">Jídelníček</h1>
 
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger shadow-sm">@errorMessage</div>
+}
+
 @if (menuItems == null)
 {
-    <div class="text-center mt-5">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Načítám...</span>
+    @if (string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="text-center mt-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Načítám...</span>
+            </div>
+            <p class="mt-2 text-muted">Načítám nabídku jídel...</p>
         </div>
-        <p class="mt-2 text-muted">Načítám nabídku jídel...</p>
-    </div>
+    }
 }
 else
 {

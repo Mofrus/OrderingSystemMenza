@@ -34,13 +34,15 @@ builder.Services.AddHttpClient("AuthAPI", client =>
 {
     client.BaseAddress = new Uri("https+http://utb-minute-webapi");
 })
-.AddHttpMessageHandler<AuthorizationMessageHandler>();
+.AddHttpMessageHandler<AuthorizationMessageHandler>()
+.AddServiceDiscovery();
 
 // Configure public client for anonymous student actions
 builder.Services.AddHttpClient("PublicAPI", client =>
 {
     client.BaseAddress = new Uri("https+http://utb-minute-webapi");
-});
+})
+.AddServiceDiscovery();
 
 // Default HttpClient injection will use PublicAPI
 builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("PublicAPI"));

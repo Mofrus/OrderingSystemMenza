@@ -1,35 +1,38 @@
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">Menza Klient</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
+<nav class="navbar navbar-expand-md navbar-dark bg-primary shadow-sm">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href=""><i class="bi bi-cup-hot-fill me-2"></i>Menza</a>
+        
+        <button class="navbar-toggler" type="button" @onclick="ToggleNavMenu">
             <span class="navbar-toggler-icon"></span>
         </button>
-    </div>
-</div>
 
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Denní menu
-            </NavLink>
-        </div>
-
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="my-orders">
-                <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Moje objednávky
-            </NavLink>
-        </div>
-
-        <AuthorizeView Roles="Cook">
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="active-orders">
-                    <span class="bi bi-check-square-fill-nav-menu" aria-hidden="true"></span> Aktivní objednávky
-                </NavLink>
+        <div class="@NavMenuCssClass navbar-collapse" @onclick="ToggleNavMenu">
+            <ul class="navbar-nav me-auto mb-2 mb-md-0">
+                <li class="nav-item">
+                    <NavLink class="nav-link px-3" href="" Match="NavLinkMatch.All">
+                        <i class="bi bi-calendar-day me-1"></i> Jídelníček
+                    </NavLink>
+                </li>
+                <li class="nav-item">
+                    <NavLink class="nav-link px-3" href="my-orders">
+                        <i class="bi bi-bag-check me-1"></i> Moje objednávky
+                    </NavLink>
+                </li>
+                <AuthorizeView Roles="Cook">
+                    <li class="nav-item">
+                        <NavLink class="nav-link px-3" href="active-orders">
+                            <i class="bi bi-list-check me-1"></i> Výdej (Kuchař)
+                        </NavLink>
+                    </li>
+                </AuthorizeView>
+            </ul>
+            
+            <div class="d-flex text-white">
+                <UTB.Minute.CanteenClient.Components.LoginDisplay />
             </div>
-        </AuthorizeView>
-    </nav>
-</div>
+        </div>
+    </div>
+</nav>
 
 @code {
     private bool collapseNavMenu = true;

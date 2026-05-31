@@ -1,17 +1,24 @@
-﻿@inherits LayoutComponentBase
-<div class="page">
-    <div class="sidebar">
+@inherits LayoutComponentBase
+
+<div class="page bg-light min-vh-100">
+    <header>
         <NavMenu />
-    </div>
+    </header>
 
-    <main>
-        <div class="top-row px-4">
-            <UTB.Minute.CanteenClient.Components.LoginDisplay />
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
-            @Body
-        </article>
+    <main class="container py-4">
+        @Body
     </main>
 </div>
+
+<style>
+    /* Reset default blazor layout styles */
+    .page {
+        flex-direction: column;
+    }
+    .sidebar {
+        display: none;
+    }
+    .main {
+        flex: 1;
+    }
+</style>
