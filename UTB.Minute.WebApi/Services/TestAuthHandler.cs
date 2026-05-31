@@ -8,6 +8,13 @@ namespace UTB.Minute.WebApi.Services;
 
 public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
+    [Obsolete]
+    public TestAuthHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder, ISystemClock clock)
+        : base(options, logger, encoder, clock)
+    {
+    }
+
+    // Modern constructor for .NET 8+
     public TestAuthHandler(IOptionsMonitor<AuthenticationSchemeOptions> options, ILoggerFactory logger, UrlEncoder encoder)
         : base(options, logger, encoder)
     {
@@ -15,7 +22,6 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
 
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
-        // Only allow this if a specific header is present to prevent accidental use
         if (!Request.Headers.ContainsKey("X-Test-Auth"))
         {
             return Task.FromResult(AuthenticateResult.NoResult());
@@ -25,12 +31,10 @@ public class TestAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions
         {
             new Claim(ClaimTypes.Name, "TestUser"),
             new Claim("preferred_username", "test@utb.cz"),
+            new Claim(ClaimTypes.Role, "Admin"),
+            new Claim(ClaimTypes.Role, "Cook"),
+            new Claim(ClaimTypes.Role, "Student")
         };
-
-        // Add roles based on header value if needed, or just add all for tests
-        claims.Add(new Claim(ClaimTypes.Role, "Admin"));
-        claims.Add(new Claim(ClaimTypes.Role, "Cook"));
-        claims.Add(new Claim(ClaimTypes.Role, "Student"));
 
         var identity = new ClaimsIdentity(claims, "TestScheme");
         var principal = new ClaimsPrincipal(identity);
