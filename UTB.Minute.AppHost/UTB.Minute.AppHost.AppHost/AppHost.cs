@@ -19,6 +19,7 @@ var keycloak = builder.AddKeycloak("keycloak")
 
 var webApi = builder
     .AddProject<Projects.UTB_Minute_WebApi>("utb-minute-webapi")
+    .WithHttpEndpoint(port: 5000, name: "http")
     .WithReference(database)
     .WithReference(keycloak)
     .WaitFor(database)

@@ -9,6 +9,10 @@
 
 <h1 class="mb-4">Jídelníček</h1>
 
+<div class="alert alert-info">
+    Debug: API URL is @Http.BaseAddress?.ToString()
+</div>
+
 @if (!string.IsNullOrEmpty(errorMessage))
 {
     <div class="alert alert-danger shadow-sm">@errorMessage</div>
