@@ -20,11 +20,15 @@ builder.Services.AddOidcAuthentication(options =>
     options.UserOptions.RoleClaim = "role";
 });
 
+var apiUrl = builder.Configuration["services:utb-minute-webapi:https:0"] ?? 
+             builder.Configuration["services:utb-minute-webapi:http:0"] ?? 
+             "https://localhost:5001"; // Fallback
+
 builder.Services.AddScoped<AuthorizationMessageHandler>(sp =>
 {
     var handler = sp.GetRequiredService<AuthorizationMessageHandler>()
         .ConfigureHandler(
-            authorizedUrls: new[] { "http://localhost:5000", "https://localhost:5001", "https+http://utb-minute-webapi" },
+            authorizedUrls: new[] { apiUrl, "http://localhost:5000", "https://localhost:5001" },
             scopes: new[] { "api" });
     return handler;
 });
@@ -32,17 +36,15 @@ builder.Services.AddScoped<AuthorizationMessageHandler>(sp =>
 // Configure the authenticated client for cooks
 builder.Services.AddHttpClient("AuthAPI", client =>
 {
-    client.BaseAddress = new Uri("https+http://utb-minute-webapi");
+    client.BaseAddress = new Uri(apiUrl);
 })
-.AddHttpMessageHandler<AuthorizationMessageHandler>()
-.AddServiceDiscovery();
+.AddHttpMessageHandler<AuthorizationMessageHandler>();
 
 // Configure public client for anonymous student actions
 builder.Services.AddHttpClient("PublicAPI", client =>
 {
-    client.BaseAddress = new Uri("https+http://utb-minute-webapi");
-})
-.AddServiceDiscovery();
+    client.BaseAddress = new Uri(apiUrl);
+});
 
 // Default HttpClient injection will use PublicAPI
 builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("PublicAPI"));

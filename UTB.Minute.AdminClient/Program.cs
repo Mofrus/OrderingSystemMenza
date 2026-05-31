@@ -16,11 +16,15 @@ builder.Services.AddOidcAuthentication(options =>
     options.UserOptions.RoleClaim = "role";
 });
 
+var apiUrl = builder.Configuration["services:utb-minute-webapi:https:0"] ?? 
+             builder.Configuration["services:utb-minute-webapi:http:0"] ?? 
+             "https://localhost:5001"; // Fallback
+
 builder.Services.AddScoped<AuthorizationMessageHandler>(sp =>
 {
     var handler = sp.GetRequiredService<AuthorizationMessageHandler>()
         .ConfigureHandler(
-            authorizedUrls: new[] { "http://localhost:5000", "https://localhost:5001", "https+http://utb-minute-webapi" },
+            authorizedUrls: new[] { apiUrl, "http://localhost:5000", "https://localhost:5001" },
             scopes: new[] { "api" });
     return handler;
 });
@@ -28,10 +32,9 @@ builder.Services.AddScoped<AuthorizationMessageHandler>(sp =>
 // Configure the named client for our API
 builder.Services.AddHttpClient("api", client =>
 {
-    client.BaseAddress = new Uri("https+http://utb-minute-webapi");
+    client.BaseAddress = new Uri(apiUrl);
 })
-.AddHttpMessageHandler<AuthorizationMessageHandler>()
-.AddServiceDiscovery();
+.AddHttpMessageHandler<AuthorizationMessageHandler>();
 
 builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("api"));
 
