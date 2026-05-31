@@ -8,6 +8,7 @@ var database = postgres
 
 var dbManager = builder
     .AddProject<Projects.UTB_Minute_DbManager>("utb-minute-dbmanager")
+    .WithHttpEndpoint(port: 5270, name: "http")
     .WithReference(database)
     .WaitFor(database)
     .WithHttpCommand("/db/reset-seed", "Reset & Seed DB");
