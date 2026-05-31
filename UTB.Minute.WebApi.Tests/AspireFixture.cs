@@ -24,46 +24,8 @@ public class AspireFixture : IAsyncLifetime
         WebApiClient = App.CreateHttpClient("utb-minute-webapi");
         DbManagerClient = App.CreateHttpClient("utb-minute-dbmanager");
 
-        // Wait a little bit for Keycloak to be fully ready
-        await Task.Delay(10000);
-
-        try 
-        {
-            var keycloakClient = App.CreateHttpClient("keycloak");
-            
-            // Retry logic for CI environments
-            for (int i = 0; i < 5; i++)
-            {
-                try
-                {
-                    var tokenResponse = await keycloakClient.PostAsync("/realms/menza/protocol/openid-connect/token", new FormUrlEncodedContent(new[]
-                    {
-                        new KeyValuePair<string, string>("client_id", "menza-client"),
-                        new KeyValuePair<string, string>("grant_type", "password"),
-                        new KeyValuePair<string, string>("username", "admin"),
-                        new KeyValuePair<string, string>("password", "admin")
-                    }));
-
-                    if (tokenResponse.IsSuccessStatusCode)
-                    {
-                        var json = await tokenResponse.Content.ReadFromJsonAsync<JsonElement>();
-                        var token = json.GetProperty("access_token").GetString();
-                        WebApiClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                        break;
-                    }
-                }
-                catch
-                {
-                    // Ignore transient network errors during startup
-                }
-                
-                await Task.Delay(3000);
-            }
-        }
-        catch (Exception)
-        {
-            // Ignore if Keycloak isn't available or fails, tests will fail naturally
-        }
+        // Use the test auth header to bypass live Keycloak in tests
+        WebApiClient.DefaultRequestHeaders.Add("X-Test-Auth", "true");
 
         // Reset and seed the database before running tests
         var resetResponse = await DbManagerClient.PostAsync("/db/reset-seed", null);

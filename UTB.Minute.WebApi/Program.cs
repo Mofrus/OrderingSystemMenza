@@ -61,9 +61,17 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
                 }
             };
         }
-    });
+    })
+    .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("TestScheme", options => { });
 
-builder.Services.AddAuthorization();
+builder.Services.AddAuthorization(options =>
+{
+    // Combine multiple authentication schemes for default policy
+    options.DefaultPolicy = new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .AddAuthenticationSchemes(JwtBearerDefaults.AuthenticationScheme, "TestScheme")
+        .Build();
+});
 
 var app = builder.Build();
 
