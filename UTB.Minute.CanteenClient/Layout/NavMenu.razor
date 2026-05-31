@@ -15,18 +15,16 @@
             </NavLink>
         </div>
 
-        <AuthorizeView Roles="Student">
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="daily-menu">
-                    <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Denní menu
-                </NavLink>
-            </div>
-            <div class="nav-item px-3">
-                <NavLink class="nav-link" href="my-orders">
-                    <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Moje objednávky
-                </NavLink>
-            </div>
-        </AuthorizeView>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="daily-menu">
+                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Denní menu
+            </NavLink>
+        </div>
+        <div class="nav-item px-3">
+            <NavLink class="nav-link" href="my-orders">
+                <span class="bi bi-person-badge-nav-menu" aria-hidden="true"></span> Moje objednávky
+            </NavLink>
+        </div>
 
         <AuthorizeView Roles="Cook">
             <div class="nav-item px-3">

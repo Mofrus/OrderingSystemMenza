@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Mvc;
 using UTB.Minute.Contracts.Orders;
 using UTB.Minute.Db;
 using UTB.Minute.Db.Entities;
@@ -13,31 +14,36 @@ public static class OrdersEndpoints
 {
     public static void MapOrdersEndpoints(this WebApplication app)
     {
-        var group = app.MapGroup("/orders").RequireAuthorization();
+        var group = app.MapGroup("/orders");
 
         group.MapGet("/", GetAllOrders)
-            .WithName("GetAllOrders"); // Students can see their orders, Cooks see all
+            .WithName("GetAllOrders"); 
 
         group.MapPost("/", CreateOrder)
-            .WithName("CreateOrder")
-            .RequireAuthorization("Student");
+            .WithName("CreateOrder");
 
         group.MapPatch("/{id}/status", UpdateOrderStatus)
             .WithName("UpdateOrderStatus")
             .RequireAuthorization("Cook");
     }
 
-    private static async Task<IResult> GetAllOrders(MinuteDbContext db, ClaimsPrincipal user)
+    private static async Task<IResult> GetAllOrders(MinuteDbContext db, ClaimsPrincipal user, [FromQuery] string[]? ids)
     {
         var query = db.Orders
             .Include(o => o.MenuItem)
             .Where(o => o.Status != UTB.Minute.Db.Entities.OrderStatus.Completed);
 
-        // If not Cook or Admin, only show own orders
+        // If not Cook or Admin, only show orders that match provided IDs
         if (!user.IsInRole("Cook") && !user.IsInRole("Admin"))
         {
-            var userEmail = user.FindFirstValue("preferred_username") ?? user.Identity?.Name ?? "unknown";
-            query = query.Where(o => o.StudentIdentifier == userEmail);
+            if (ids == null || ids.Length == 0)
+            {
+                // Guest without specific IDs shouldn't see any orders
+                return TypedResults.Ok(new List<OrderDto>());
+            }
+            
+            var idGuids = ids.Select(i => Guid.TryParse(i, out var g) ? g : Guid.Empty).ToList();
+            query = query.Where(o => idGuids.Contains(o.Id));
         }
 
         var orders = await query.ToListAsync();
@@ -45,7 +51,7 @@ public static class OrdersEndpoints
         return TypedResults.Ok(orderDtos);
     }
 
-    private static async Task<IResult> CreateOrder(CreateOrderDto dto, MinuteDbContext db, ClaimsPrincipal user, NotificationService notificationService)
+    private static async Task<IResult> CreateOrder(CreateOrderDto dto, MinuteDbContext db, NotificationService notificationService)
     {
         var menuItem = await db.MenuItems
             .Include(m => m.Meal)
@@ -61,13 +67,11 @@ public static class OrdersEndpoints
             return TypedResults.BadRequest("No available portions for this menu item");
         }
 
-        var userEmail = user.FindFirstValue("preferred_username") ?? user.Identity?.Name ?? "unknown";
-
         var order = new Order
         {
             Id = Guid.NewGuid(),
             MenuItemId = dto.MenuItemId,
-            StudentIdentifier = userEmail,
+            StudentIdentifier = $"Guest-{Guid.NewGuid().ToString()[..6]}",
             Status = UTB.Minute.Db.Entities.OrderStatus.Preparing
         };
 

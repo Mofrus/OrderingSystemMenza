@@ -13,7 +13,8 @@ public static class MenuEndpoints
         var group = app.MapGroup("/menu-items").RequireAuthorization();
 
         group.MapGet("/", GetAllMenuItems)
-            .WithName("GetAllMenuItems");
+            .WithName("GetAllMenuItems")
+            .AllowAnonymous();
 
         group.MapPost("/", CreateMenuItem)
             .WithName("CreateMenuItem")

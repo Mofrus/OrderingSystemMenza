@@ -1,8 +1,9 @@
 @page "/daily-menu"
-@attribute [Authorize(Roles = "Student")]
+@using Blazored.LocalStorage
 @implements IDisposable
 @inject HttpClient Http
 @inject SseNotificationService Sse
+@inject ILocalStorageService LocalStorage
 
 <PageTitle>Denní menu</PageTitle>
 
@@ -12,7 +13,7 @@
 {
     <p><em>Načítám...</em></p>
 }
-else if (menuItems.Count == 0)
+else if (menuItems.Count == 0 || !menuItems.Any(m => m.Date == DateOnly.FromDateTime(DateTime.Today)))
 {
     <p>Pro dnešní den není naplánováno žádné menu.</p>
 }
@@ -31,17 +32,19 @@ else
         @foreach (var item in menuItems.Where(m => m.Date == DateOnly.FromDateTime(DateTime.Today)))
         {
             <div class="col-md-4 mb-3">
-                <div class="card @(item.AvailablePortions <= 0 ? "border-danger text-muted" : "")">
+                <div class="card @(item.AvailablePortions <= 0 ? "border-danger text-muted shadow-sm" : "shadow")">
                     <div class="card-body">
                         <h5 class="card-title">@item.MealName</h5>
                         <h6 class="card-subtitle mb-2 text-muted">@item.AvailablePortions porcí zbývá</h6>
                         @if (item.AvailablePortions > 0)
                         {
-                            <button class="btn btn-primary" @onclick="() => OrderMeal(item.Id)">Objednat</button>
+                            <button class="btn btn-primary w-100" @onclick="() => OrderMeal(item.Id)">Objednat</button>
                         }
                         else
                         {
-                            <span class="text-danger fw-bold">VYPRODÁNO</span>
+                            <div class="text-center">
+                                <span class="badge bg-danger p-2 w-100">VYPRODÁNO</span>
+                            </div>
                         }
                     </div>
                 </div>
@@ -78,7 +81,14 @@ else
 
     private async Task LoadMenu()
     {
-        menuItems = await Http.GetFromJsonAsync<List<MenuItemDto>>("menu-items");
+        try 
+        {
+            menuItems = await Http.GetFromJsonAsync<List<MenuItemDto>>("menu-items");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Nepodařilo se načíst menu: " + ex.Message;
+        }
     }
 
     private async Task OrderMeal(Guid menuItemId)
@@ -91,8 +101,13 @@ else
 
         if (response.IsSuccessStatusCode)
         {
-            successMessage = "Jídlo bylo úspěšně objednáno.";
-            await LoadMenu(); // Reload portions
+            var order = await response.Content.ReadFromJsonAsync<OrderDto>();
+            if (order != null)
+            {
+                await SaveOrderIdLocally(order.Id);
+                successMessage = $"Jídlo bylo úspěšně objednáno. Vaše číslo objednávky je: {order.Id.ToString()[..8].ToUpper()}";
+            }
+            await LoadMenu();
         }
         else if (response.StatusCode == System.Net.HttpStatusCode.Conflict)
         {
@@ -103,5 +118,12 @@ else
         {
             errorMessage = "Při objednávání došlo k chybě.";
         }
+    }
+
+    private async Task SaveOrderIdLocally(Guid orderId)
+    {
+        var orders = await LocalStorage.GetItemAsync<List<string>>("my_orders") ?? new List<string>();
+        orders.Add(orderId.ToString());
+        await LocalStorage.SetItemAsync("my_orders", orders);
     }
 }

@@ -21,25 +21,41 @@ app.MapPost("/db/reset-seed", async (MinuteDbContext db) =>
         new Meal
         {
             Id = Guid.NewGuid(),
-            Name = "Guláš",
-            Description = "Tradiční český guláš",
-            Price = 150.00m,
+            Name = "Svíčková na smetaně",
+            Description = "Tradiční hovězí pečeně s karlovarským knedlíkem a brusinkami.",
+            Price = 189.00m,
             IsActive = true
         },
         new Meal
         {
             Id = Guid.NewGuid(),
-            Name = "Svíčková",
-            Description = "Svíčková na smetaně",
-            Price = 180.00m,
+            Name = "Smažený vepřový řízek",
+            Description = "Smažený řízek z vepřové pečeně, podávaný s vídeňským bramborovým salátem.",
+            Price = 165.00m,
             IsActive = true
         },
         new Meal
         {
             Id = Guid.NewGuid(),
-            Name = "Řízek",
-            Description = "Smažený řízek",
-            Price = 160.00m,
+            Name = "Špagety Carbonara",
+            Description = "Krémové špagety s pancettou, žloutkem a parmazánem.",
+            Price = 145.00m,
+            IsActive = true
+        },
+        new Meal
+        {
+            Id = Guid.NewGuid(),
+            Name = "Smažený sýr v bulce",
+            Description = "Eidam v křupavé strouhance, tatarská omáčka a hranolky.",
+            Price = 135.00m,
+            IsActive = true
+        },
+        new Meal
+        {
+            Id = Guid.NewGuid(),
+            Name = "Čočka na kyselo",
+            Description = "Čočka s uzeným masem, sázeným vejcem a kyselou okurkou.",
+            Price = 125.00m,
             IsActive = true
         }
     };
@@ -57,21 +73,35 @@ app.MapPost("/db/reset-seed", async (MinuteDbContext db) =>
             Id = Guid.NewGuid(),
             Date = today,
             MealId = meals[0].Id,
-            AvailablePortions = 50
+            AvailablePortions = 30
         },
         new MenuItem
         {
             Id = Guid.NewGuid(),
             Date = today,
             MealId = meals[1].Id,
-            AvailablePortions = 40
+            AvailablePortions = 45
+        },
+        new MenuItem
+        {
+            Id = Guid.NewGuid(),
+            Date = today,
+            MealId = meals[2].Id,
+            AvailablePortions = 5
         },
         new MenuItem
         {
             Id = Guid.NewGuid(),
             Date = tomorrow,
-            MealId = meals[2].Id,
-            AvailablePortions = 60
+            MealId = meals[3].Id,
+            AvailablePortions = 50
+        },
+        new MenuItem
+        {
+            Id = Guid.NewGuid(),
+            Date = tomorrow,
+            MealId = meals[4].Id,
+            AvailablePortions = 40
         }
     };
 

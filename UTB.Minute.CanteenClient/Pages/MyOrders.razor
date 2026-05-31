@@ -1,8 +1,9 @@
 @page "/my-orders"
-@attribute [Authorize(Roles = "Student")]
+@using Blazored.LocalStorage
 @implements IDisposable
 @inject HttpClient Http
 @inject SseNotificationService Sse
+@inject ILocalStorageService LocalStorage
 
 <PageTitle>Moje objednávky</PageTitle>
 
@@ -14,14 +15,14 @@
 }
 else if (orders.Count == 0)
 {
-    <p>Nemáte žádné aktivní objednávky.</p>
+    <div class="alert alert-info">Nemáte žádné aktivní objednávky. Pokud jste si právě objednali, ujistěte se, že máte povolené LocalStorage.</div>
 }
 else
 {
-    <table class="table">
-        <thead>
+    <table class="table table-hover shadow-sm">
+        <thead class="table-light">
             <tr>
-                <th>ID Objednávky</th>
+                <th>Číslo objednávky</th>
                 <th>Jídlo</th>
                 <th>Datum</th>
                 <th>Stav</th>
@@ -31,11 +32,11 @@ else
             @foreach (var order in orders)
             {
                 <tr>
-                    <td>@order.Id.ToString()[..8]...</td>
+                    <td class="fw-bold text-primary">@order.Id.ToString()[..8].ToUpper()</td>
                     <td>@order.MenuItem.MealName</td>
                     <td>@order.MenuItem.Date.ToShortDateString()</td>
                     <td>
-                        <span class="badge @GetStatusClass(order.Status)">@order.Status</span>
+                        <span class="badge @GetStatusClass(order.Status) p-2">@order.Status</span>
                     </td>
                 </tr>
             }
@@ -69,13 +70,23 @@ else
 
     private async Task LoadOrders()
     {
-        orders = await Http.GetFromJsonAsync<List<OrderDto>>("orders");
+        var localIds = await LocalStorage.GetItemAsync<List<string>>("my_orders") ?? new List<string>();
+        
+        if (localIds.Count == 0)
+        {
+            orders = new List<OrderDto>();
+            return;
+        }
+
+        // Build query string ?ids=...&ids=...
+        var query = string.Join("&", localIds.Select(id => $"ids={id}"));
+        orders = await Http.GetFromJsonAsync<List<OrderDto>>($"orders?{query}");
     }
 
     private string GetStatusClass(Contracts.Enums.OrderStatus status) => status switch
     {
         Contracts.Enums.OrderStatus.Preparing => "bg-warning text-dark",
-        Contracts.Enums.OrderStatus.Ready => "bg-success",
+        Contracts.Enums.OrderStatus.Ready => "bg-success shadow-sm",
         Contracts.Enums.OrderStatus.Cancelled => "bg-danger",
         Contracts.Enums.OrderStatus.Completed => "bg-secondary",
         _ => "bg-primary"
