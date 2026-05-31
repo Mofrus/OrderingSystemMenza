@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using Microsoft.AspNetCore.Components.WebAssembly.Authentication;
 using UTB.Minute.CanteenClient;
 using UTB.Minute.CanteenClient.Services;
+using UTB.Minute.CanteenClient.Security;
 using Blazored.LocalStorage;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
@@ -18,7 +19,8 @@ builder.Services.AddOidcAuthentication(options =>
     options.ProviderOptions.ClientId = "menza-client";
     options.ProviderOptions.ResponseType = "code";
     options.UserOptions.RoleClaim = "role";
-});
+})
+.AddAccountClaimsPrincipalFactory<ArrayClaimsPrincipalFactory<RemoteUserAccount>>();
 
 var apiUrl = builder.Configuration["services:utb-minute-webapi:http:0"] ?? 
              builder.Configuration["services:utb-minute-webapi:https:0"] ?? 
