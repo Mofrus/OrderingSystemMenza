@@ -64,46 +64,27 @@ app.MapPost("/db/reset-seed", async (MinuteDbContext db) =>
     await db.SaveChangesAsync();
 
     var today = DateOnly.FromDateTime(DateTime.UtcNow);
-    var tomorrow = today.AddDays(1);
+    var menuItems = new List<MenuItem>();
+    var rand = new Random(42);
 
-    var menuItems = new List<MenuItem>
+    for (int i = 0; i < 7; i++)
     {
-        new MenuItem
+        var currentDate = today.AddDays(i);
+        
+        // Pick 2-3 random meals for each day
+        var shuffledMeals = meals.OrderBy(x => rand.Next()).Take(rand.Next(2, 4)).ToList();
+        
+        foreach (var meal in shuffledMeals)
         {
-            Id = Guid.NewGuid(),
-            Date = today,
-            MealId = meals[0].Id,
-            AvailablePortions = 30
-        },
-        new MenuItem
-        {
-            Id = Guid.NewGuid(),
-            Date = today,
-            MealId = meals[1].Id,
-            AvailablePortions = 45
-        },
-        new MenuItem
-        {
-            Id = Guid.NewGuid(),
-            Date = today,
-            MealId = meals[2].Id,
-            AvailablePortions = 5
-        },
-        new MenuItem
-        {
-            Id = Guid.NewGuid(),
-            Date = tomorrow,
-            MealId = meals[3].Id,
-            AvailablePortions = 50
-        },
-        new MenuItem
-        {
-            Id = Guid.NewGuid(),
-            Date = tomorrow,
-            MealId = meals[4].Id,
-            AvailablePortions = 40
+            menuItems.Add(new MenuItem
+            {
+                Id = Guid.NewGuid(),
+                Date = currentDate,
+                MealId = meal.Id,
+                AvailablePortions = rand.Next(5, 50)
+            });
         }
-    };
+    }
 
     db.MenuItems.AddRange(menuItems);
     await db.SaveChangesAsync();

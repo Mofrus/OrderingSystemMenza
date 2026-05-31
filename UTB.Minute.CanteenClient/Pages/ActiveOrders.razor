@@ -1,7 +1,7 @@
 @page "/active-orders"
 @attribute [Authorize(Roles = "Cook")]
 @implements IDisposable
-@inject HttpClient Http
+@inject IHttpClientFactory ClientFactory
 @inject SseNotificationService Sse
 
 <PageTitle>Aktivní objednávky</PageTitle>
@@ -60,11 +60,13 @@ else
 }
 
 @code {
+    private HttpClient Http = default!;
     private List<OrderDto>? orders;
     private string? errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
+        Http = ClientFactory.CreateClient("AuthAPI");
         Sse.OnNotificationReceived += HandleNotification;
         await LoadOrders();
         _ = Sse.StartListeningAsync();

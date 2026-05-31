@@ -29,14 +29,21 @@ builder.Services.AddScoped<AuthorizationMessageHandler>(sp =>
     return handler;
 });
 
-// Configure the named client for our API
-builder.Services.AddHttpClient("api", client =>
+// Configure the authenticated client for cooks
+builder.Services.AddHttpClient("AuthAPI", client =>
 {
     client.BaseAddress = new Uri("https+http://utb-minute-webapi");
 })
 .AddHttpMessageHandler<AuthorizationMessageHandler>();
 
-builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("api"));
+// Configure public client for anonymous student actions
+builder.Services.AddHttpClient("PublicAPI", client =>
+{
+    client.BaseAddress = new Uri("https+http://utb-minute-webapi");
+});
+
+// Default HttpClient injection will use PublicAPI
+builder.Services.AddScoped(sp => sp.GetRequiredService<IHttpClientFactory>().CreateClient("PublicAPI"));
 
 // Přidání SSE služby
 builder.Services.AddScoped<SseNotificationService>();
