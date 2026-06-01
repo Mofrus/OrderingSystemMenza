@@ -34,7 +34,7 @@ else if (orders != null && orders.Count == 0)
 else
 {
     <div class="row">
-        @foreach (var order in orders)
+        @foreach (var order in orders!)
         {
             <div class="col-md-6 col-lg-4 mb-3">
                 <div class="card shadow-sm h-100 border-top-0 border-end-0 border-bottom-0 border-4 @GetCardBorderClass(order.Status)">
@@ -43,7 +43,7 @@ else
                             <span class="text-muted small">#@order.Id.ToString()[..8].ToUpper()</span>
                             <span class="badge @GetStatusClass(order.Status)">@order.Status</span>
                         </div>
-                        <h4 class="card-title mt-2 fw-bold">@order.MenuItem.MealName</h4>
+                        <h4 class="card-title mt-2 fw-bold">@order.MenuItem?.MealName</h4>
                         
                         <div class="mt-4 d-flex justify-content-between">
                             @if (order.Status == Contracts.Enums.OrderStatus.Preparing)

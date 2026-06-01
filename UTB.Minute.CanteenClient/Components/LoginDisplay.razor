@@ -16,12 +16,8 @@
     [Inject]
     public NavigationManager Navigation { get; set; } = default!;
 
-    [Inject]
-    public SignOutSessionStateManager SignOutManager { get; set; } = default!;
-
-    private async Task BeginSignOut()
+    private void BeginSignOut()
     {
-        await SignOutManager.SetSignOutState();
-        Navigation.NavigateTo("authentication/logout");
+        Navigation.NavigateToLogout("authentication/logout");
     }
 }

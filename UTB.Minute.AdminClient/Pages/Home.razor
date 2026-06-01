@@ -1,7 +1,55 @@
-﻿@page "/"
+@page "/"
+@inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>Home</PageTitle>
+<PageTitle>Vedení menzy</PageTitle>
 
-<h1>Hello, world!</h1>
+<div class="py-4">
+    <AuthorizeView>
+        <Authorized>
+            <div class="d-flex align-items-center mb-4 gap-3">
+                <i class="bi bi-gear-fill fs-1 text-dark"></i>
+                <div>
+                    <h1 class="mb-0">Vítejte, @context.User.Identity?.Name</h1>
+                    <p class="text-muted mb-0">Administrátorské rozhraní systému UTB.Minute</p>
+                </div>
+            </div>
 
-Welcome to your new app.
+            <div class="row g-4 mt-2">
+                <div class="col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body d-flex align-items-start gap-3">
+                            <i class="bi bi-egg-fried fs-2 text-primary"></i>
+                            <div>
+                                <h5 class="card-title">Správa jídel</h5>
+                                <p class="card-text text-muted">Přidávejte, upravujte a deaktivujte jídla v katalogu.</p>
+                                <a href="meals" class="btn btn-primary btn-sm">Přejít na správu jídel</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body d-flex align-items-start gap-3">
+                            <i class="bi bi-calendar-range fs-2 text-success"></i>
+                            <div>
+                                <h5 class="card-title">Plánování menu</h5>
+                                <p class="card-text text-muted">Plánujte denní menu a nastavujte dostupné porce.</p>
+                                <a href="menu-items" class="btn btn-success btn-sm">Přejít na plánování menu</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </Authorized>
+        <NotAuthorized>
+            <div class="text-center py-5">
+                <i class="bi bi-shield-lock fs-1 text-muted d-block mb-3"></i>
+                <h2>Administrátorský portál</h2>
+                <p class="text-muted mb-4">Pro přístup se prosím přihlaste jako administrátor.</p>
+                <a href="authentication/login" class="btn btn-dark px-4">
+                    <i class="bi bi-box-arrow-in-right me-2"></i>Přihlásit se
+                </a>
+            </div>
+        </NotAuthorized>
+    </AuthorizeView>
+</div>

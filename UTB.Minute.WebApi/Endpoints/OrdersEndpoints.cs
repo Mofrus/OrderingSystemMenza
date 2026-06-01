@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +25,17 @@ public static class OrdersEndpoints
         group.MapPatch("/{id}/status", UpdateOrderStatus)
             .WithName("UpdateOrderStatus")
             .RequireAuthorization("Cook");
+
+        group.MapGet("/debug-claims", (ClaimsPrincipal user) =>
+        {
+            return TypedResults.Ok(new
+            {
+                IsAuthenticated = user.Identity?.IsAuthenticated,
+                AuthenticationType = user.Identity?.AuthenticationType,
+                Name = user.Identity?.Name,
+                Claims = user.Claims.Select(c => new { c.Type, c.Value }).ToList()
+            });
+        }).RequireAuthorization();
     }
 
     private static async Task<IResult> GetAllOrders(MinuteDbContext db, ClaimsPrincipal user, [FromQuery] string[]? ids)
@@ -34,7 +45,7 @@ public static class OrdersEndpoints
             .Where(o => o.Status != UTB.Minute.Db.Entities.OrderStatus.Completed);
 
         // If not Cook or Admin, only show orders that match provided IDs
-        if (!user.IsInRole("Cook") && !user.IsInRole("Admin"))
+        if (!user.IsInRole("Cook") && !user.IsInRole("Admin") && !user.IsInRole("cook") && !user.IsInRole("admin"))
         {
             if (ids == null || ids.Length == 0)
             {

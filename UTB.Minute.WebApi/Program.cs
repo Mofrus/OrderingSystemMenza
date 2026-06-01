@@ -34,41 +34,60 @@ builder.Services.AddCors(options =>
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
-        // For local development with Aspire, Keycloak connection string is provided automatically
-        var keycloakUrl = builder.Configuration.GetConnectionString("keycloak");
-        if (!string.IsNullOrEmpty(keycloakUrl))
+        // Aspire provides Keycloak URL via service discovery, not connection strings
+        var keycloakUrl = builder.Configuration["services:keycloak:http:0"]
+                          ?? builder.Configuration.GetConnectionString("keycloak")
+                          ?? "http://localhost:8080";
+        keycloakUrl = keycloakUrl.TrimEnd('/');
+        
+        options.Authority = $"{keycloakUrl}/realms/menza";
+        Console.WriteLine($"[JWT] Keycloak Authority configured: {options.Authority}");
+        options.RequireHttpsMetadata = false;
+        options.TokenValidationParameters = new TokenValidationParameters
         {
-            options.Authority = $"{keycloakUrl}/realms/menza";
-            options.RequireHttpsMetadata = false;
-            options.TokenValidationParameters = new TokenValidationParameters
+            ValidateAudience = false,
+            ValidateIssuer = true, // Force validation so our custom validator is called
+            IssuerValidator = (issuer, securityToken, validationParameters) =>
             {
-                ValidateAudience = false,
-                NameClaimType = "preferred_username"
-            };
+                // Always accept the token's issuer
+                return issuer;
+            },
+            NameClaimType = "preferred_username",
+            RoleClaimType = "role"
+        };
 
-            options.Events = new JwtBearerEvents
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = context =>
             {
-                OnTokenValidated = context =>
+                if (context.Principal?.Identity is ClaimsIdentity identity
+                    && context.SecurityToken is Microsoft.IdentityModel.JsonWebTokens.JsonWebToken jwt)
                 {
-                    if (context.Principal?.Identity is ClaimsIdentity identity)
+                    // Safely parse the realm_access JSON object directly from the JWT
+                    if (jwt.TryGetPayloadValue<System.Text.Json.JsonElement>("realm_access", out var realmAccess)
+                        && realmAccess.TryGetProperty("roles", out var roles)
+                        && roles.ValueKind == System.Text.Json.JsonValueKind.Array)
                     {
-                        var realmAccess = context.Principal.FindFirst("realm_access")?.Value;
-                        if (realmAccess != null)
+                        foreach (var role in roles.EnumerateArray())
                         {
-                            using var json = System.Text.Json.JsonDocument.Parse(realmAccess);
-                            if (json.RootElement.TryGetProperty("roles", out var roles))
+                            var roleStr = role.GetString();
+                            if (!string.IsNullOrEmpty(roleStr))
                             {
-                                foreach (var role in roles.EnumerateArray())
-                                {
-                                    identity.AddClaim(new Claim(ClaimTypes.Role, role.GetString()!));
-                                }
+                                identity.AddClaim(new Claim(ClaimTypes.Role, roleStr));
+                                identity.AddClaim(new Claim("role", roleStr)); // Add both just to be safe
                             }
                         }
                     }
-                    return Task.CompletedTask;
                 }
-            };
-        }
+                return Task.CompletedTask;
+            },
+            OnAuthenticationFailed = context =>
+            {
+                var logger = context.HttpContext.RequestServices.GetRequiredService<ILoggerFactory>().CreateLogger("JwtBearer");
+                logger.LogWarning("JWT authentication failed: {Error}", context.Exception.Message);
+                return Task.CompletedTask;
+            }
+        };
     })
     .AddScheme<AuthenticationSchemeOptions, TestAuthHandler>("TestScheme", options => { });
 

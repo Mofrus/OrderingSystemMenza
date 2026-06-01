@@ -1,7 +1,8 @@
 var builder = DistributedApplication.CreateBuilder(args);
 
 var postgres = builder
-    .AddPostgres("postgres");
+    .AddPostgres("postgres")
+    .WithDataVolume();
 
 var database = postgres
     .AddDatabase("minute-db");
@@ -24,7 +25,8 @@ var webApi = builder
     .WithReference(database)
     .WithReference(keycloak)
     .WaitFor(database)
-    .WaitFor(keycloak);
+    .WaitFor(keycloak)
+    .WaitFor(dbManager);
 
 var adminClient = builder.AddProject<Projects.UTB_Minute_AdminClient>("utb-minute-adminclient")
     .WithReference(webApi)

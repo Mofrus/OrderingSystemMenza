@@ -6,9 +6,18 @@
 
 <h1>Správa jídel</h1>
 
-@if (meals == null)
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger shadow-sm">@errorMessage</div>
+}
+
+@if (meals == null && string.IsNullOrEmpty(errorMessage))
 {
     <p><em>Načítám...</em></p>
+}
+else if (meals == null)
+{
+    <p></p>
 }
 else
 {
@@ -79,6 +88,7 @@ else
     private bool isCreating = false;
     private Guid? editingId = null;
     private MealFormModel currentMeal = new();
+    private string? errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -89,6 +99,10 @@ else
         catch (AccessTokenNotAvailableException ex)
         {
             ex.Redirect();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Chyba při načítání: {ex.Message}";
         }
     }
 
@@ -112,7 +126,8 @@ else
         {
             Name = meal.Name,
             Description = meal.Description,
-            Price = meal.Price
+            Price = meal.Price,
+            IsActive = meal.IsActive
         };
     }
 
@@ -140,7 +155,8 @@ else
             {
                 Name = currentMeal.Name,
                 Description = currentMeal.Description,
-                Price = currentMeal.Price
+                Price = currentMeal.Price,
+                IsActive = currentMeal.IsActive
             };
             await Http.PutAsJsonAsync($"meals/{editingId.Value}", updateDto);
         }
@@ -160,5 +176,6 @@ else
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
         public decimal Price { get; set; }
+        public bool IsActive { get; set; } = true;
     }
 }

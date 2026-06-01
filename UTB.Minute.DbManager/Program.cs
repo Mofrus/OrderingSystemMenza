@@ -11,11 +11,38 @@ var app = builder.Build();
 
 app.MapDefaultEndpoints();
 
+// Auto-seed on startup: create schema and seed only if the DB is empty
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<MinuteDbContext>();
+    await db.Database.EnsureCreatedAsync();
+
+    if (!await db.Meals.AnyAsync())
+    {
+        await SeedAsync(db);
+        app.Logger.LogInformation("Database was empty — seeded successfully.");
+    }
+    else
+    {
+        app.Logger.LogInformation("Database already contains data — skipping seed.");
+    }
+}
+
+// Manual reset+seed endpoint (still available for dev convenience)
 app.MapPost("/db/reset-seed", async (MinuteDbContext db) =>
 {
     await db.Database.EnsureDeletedAsync();
     await db.Database.EnsureCreatedAsync();
+    await SeedAsync(db);
+    return TypedResults.Ok(new { message = "Database reset and seeded successfully" });
+}).WithName("ResetAndSeed");
 
+app.MapGet("/", () => "DbManager is running");
+
+app.Run();
+
+static async Task SeedAsync(MinuteDbContext db)
+{
     var meals = new List<Meal>
     {
         new Meal
@@ -70,10 +97,10 @@ app.MapPost("/db/reset-seed", async (MinuteDbContext db) =>
     for (int i = 0; i < 7; i++)
     {
         var currentDate = today.AddDays(i);
-        
+
         // Pick 2-3 random meals for each day
         var shuffledMeals = meals.OrderBy(x => rand.Next()).Take(rand.Next(2, 4)).ToList();
-        
+
         foreach (var meal in shuffledMeals)
         {
             menuItems.Add(new MenuItem
@@ -88,10 +115,4 @@ app.MapPost("/db/reset-seed", async (MinuteDbContext db) =>
 
     db.MenuItems.AddRange(menuItems);
     await db.SaveChangesAsync();
-
-    return TypedResults.Ok(new { message = "Database reset and seeded successfully" });
-}).WithName("ResetAndSeed");
-
-app.MapGet("/", () => "DbManager is running");
-
-app.Run();
+}

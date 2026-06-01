@@ -6,9 +6,18 @@
 
 <h1>Správa denního menu</h1>
 
-@if (menuItems == null || meals == null)
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger shadow-sm">@errorMessage</div>
+}
+
+@if ((menuItems == null || meals == null) && string.IsNullOrEmpty(errorMessage))
 {
     <p><em>Načítám...</em></p>
+}
+else if (menuItems == null || meals == null)
+{
+    <p></p>
 }
 else
 {
@@ -81,6 +90,7 @@ else
     private bool isCreating = false;
     private Guid? editingId = null;
     private MenuItemFormModel currentMenuItem = new();
+    private string? errorMessage;
 
     protected override async Task OnInitializedAsync()
     {
@@ -91,6 +101,10 @@ else
         catch (AccessTokenNotAvailableException ex)
         {
             ex.Redirect();
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Chyba při načítání: {ex.Message}";
         }
     }
 
